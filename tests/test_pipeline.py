@@ -1,0 +1,132 @@
+import random
+from datetime import timedelta
+from types import SimpleNamespace
+
+import pytest
+
+from w2e.pipeline import run_tick, schedule_gate
+from w2e.planner import Planner
+from w2e.square import PublishResult
+from w2e.store import HistoryEntry, Store, utcnow
+from w2e.writer import PostDraft, Review, Writer
+
+from test_quality import GOOD
+
+
+class FakeWriter:
+    def __init__(self, drafts, reviews):
+        self.drafts, self.reviews, self.feedback = list(drafts), list(reviews), []
+
+    def write(self, brief, recent, feedback=None):
+        self.feedback.append(feedback)
+        return self.drafts.pop(0)
+
+    def review(self, brief, draft):
+        return self.reviews.pop(0)
+
+
+class FakeSquare:
+    def __init__(self):
+        self.calls = []
+
+    def publish(self, text, title=None, image_path=None):
+        self.calls.append((text, title, image_path))
+        return PublishResult("42", "https://www.binance.com/square/post/42")
+
+
+def _entry(minutes_ago, fmt="coin_focus", coins=("SOL",)):
+    return HistoryEntry("d", fmt, list(coins), "t", None, "published", (utcnow() - timedelta(minutes=minutes_ago)).isoformat())
+
+
+def test_gate(settings):
+    store = Store(settings.data_path)
+    rng = random.Random(0)
+    settings.schedule.post_probability = 1.0
+    settings.schedule.active_hours_utc = (0, 24)
+    now = utcnow()
+    assert schedule_gate(settings, store, now, rng) is None
+    settings.schedule.active_hours_utc = ((now.hour + 1) % 24, (now.hour + 2) % 24 or 24)
+    assert "active hours" in schedule_gate(settings, store, now, rng)
+    settings.schedule.active_hours_utc = (0, 24)
+    store.append(_entry(10))
+    assert "min ago" in schedule_gate(settings, store, utcnow(), rng)
+    settings.schedule.min_minutes_between_posts = 5
+    settings.schedule.post_probability = 0.0
+    assert "random skip" in schedule_gate(settings, store, utcnow(), rng)
+
+
+def test_daily_cap(settings):
+    store = Store(settings.data_path)
+    settings.schedule.max_posts_per_day = 1
+    settings.schedule.min_minutes_between_posts = 0
+    settings.schedule.post_probability = 1.0
+    settings.schedule.active_hours_utc = (0, 24)
+    store.append(_entry(1))
+    assert "daily cap" in schedule_gate(settings, store, utcnow(), random.Random())
+
+
+def test_planner_avoids_repeat_format_and_cooldown_coin(settings, market):
+    store = Store(settings.data_path)
+    store.append(_entry(30, fmt="coin_focus", coins=("SOL", "PEPE")))
+    planner = Planner(settings, store, market, random.Random(3))
+    for _ in range(20):
+        assert planner.choose_format([]) != "coin_focus"
+    snap = market.snapshot()
+    for _ in range(20):
+        assert planner.pick_coin(snap) not in {"SOL", "PEPE"}
+
+
+def test_end_to_end_auto_publish_with_chart(settings, market):
+    settings.mode = "auto"
+    writer = FakeWriter([PostDraft(title="", text=GOOD)], [Review(score=8, factual_errors=[], issues=[])])
+    square = FakeSquare()
+    res = run_tick(settings, force=True, force_format="coin_focus", force_coin="SOL", market=market,
+                   writer=writer, square=square)
+    assert res.status == "published", res.detail
+    text, title, image = square.calls[0]
+    assert text == GOOD and title is None and image.endswith(".png")
+    hist = Store(settings.data_path).history()
+    assert hist[-1].link.endswith("/42") and hist[-1].coins == ["SOL", "BTC"]
+
+
+def test_rewrite_after_failed_checks_then_reject(settings, market):
+    settings.mode = "dry-run"
+    bad = PostDraft(title="", text="too short $SOL")
+    writer = FakeWriter([bad, PostDraft(title="", text=GOOD)],
+                        [Review(score=5, factual_errors=["price 150 not in data"], issues=[])])
+    res = run_tick(settings, force=True, force_format="coin_focus", force_coin="SOL", market=market, writer=writer)
+    assert res.status == "rejected"
+    assert any("length" in f for f in writer.feedback[1])
+    assert Store(settings.data_path).history() == []
+
+
+def test_review_mode_queues(settings, market):
+    settings.mode = "review"
+    settings.content.charts = False
+    writer = FakeWriter([PostDraft(title="", text=GOOD)], [Review(score=9, factual_errors=[], issues=[])])
+    res = run_tick(settings, force=True, force_format="market_pulse", market=market, writer=writer)
+    assert res.status == "queued"
+    assert Store(settings.data_path).queued()[0].text == GOOD
+
+
+def test_writer_request_shape_and_refusal(settings):
+    calls = []
+
+    def parse(**kw):
+        calls.append(kw)
+        return SimpleNamespace(stop_reason=kw.pop("_stop", "end_turn"), stop_details=None,
+                               parsed_output=PostDraft(title="should be cleared", text="x $BTC"))
+
+    client = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(parse=parse)))
+    w = Writer(settings, client)
+    brief = SimpleNamespace(format="market_pulse", article=False, chart=None, data={"a": 1})
+    draft = w.write(brief, [])
+    assert draft.title == ""
+    kw = calls[0]
+    assert kw["model"] == settings.llm.model and kw["fallbacks"] == "default"
+    assert kw["betas"] == ["server-side-fallback-2026-07-01"] and kw["thinking"] == {"type": "adaptive"}
+    assert kw["output_format"] is PostDraft and "temperature" not in kw
+
+    client.beta.messages.parse = lambda **kw: SimpleNamespace(stop_reason="refusal", stop_details="x", parsed_output=None)
+    with pytest.raises(RuntimeError, match="declined"):
+        w.write(brief, [])

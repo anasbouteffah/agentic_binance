@@ -1,0 +1,32 @@
+# OPTIONAL. Copy to .github/workflows/w2e.yml to run on GitHub's servers.
+#
+# Warning: GitHub-hosted runners are in the US. Binance.com (including the
+# Square API) blocks US IP addresses, so this will most likely fail with
+# HTTP 403/451. Use a self-hosted runner in an allowed country, or prefer the
+# VPS + cron setup in the README.
+name: w2e
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: w2e
+jobs:
+  tick:
+    runs-on: ubuntu-latest   # replace with: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install .
+      - run: w2e run
+        env:
+          BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Save post history
+        run: |
+          git config user.name "w2e-bot"
+          git config user.email "w2e-bot@users.noreply.github.com"
+          git add -f data/history.jsonl 2>/dev/null || exit 0
+          git diff --cached --quiet || (git commit -m "chore: update post history" && git push)

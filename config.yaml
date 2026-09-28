@@ -1,0 +1,71 @@
+# Write to Earn automation settings.
+# Every value here can be changed without touching code.
+
+# auto    -> generate, check, and publish without human input
+# review  -> generate and check, then wait in data/queue/ for `w2e approve <id>`
+# dry-run -> generate and check, print the result, publish nothing
+mode: auto
+
+# Language of the posts (any language Claude writes well: en, fr, ar, es, ...)
+language: en
+
+llm:
+  model: claude-opus-5
+  # low | medium | high. medium is a good cost/quality balance for short posts.
+  effort: medium
+
+schedule:
+  # Binance's OpenAPI allows 100 posts/day, but volume is what gets accounts
+  # flagged. A few strong posts per day beat many weak ones.
+  max_posts_per_day: 3
+  min_minutes_between_posts: 180
+  # Only publish between these UTC hours (start inclusive, end exclusive).
+  active_hours_utc: [7, 22]
+  # Chance that a scheduler tick which passes every gate actually posts.
+  # Below 1.0 spreads posting times so they do not look machine-regular.
+  post_probability: 0.6
+
+content:
+  # Relative weights. The planner never picks the same format twice in a row.
+  formats:
+    market_pulse: 3     # top movers of the day, with numbers
+    coin_focus: 4       # one coin: price action, volume, funding, levels
+    news_take: 2        # an opinion on a fresh headline, backed by market data
+    explainer: 1        # a concept explained with today's data as the example
+  # One long-form article per week (Square "article" type, with chart cover).
+  weekly_article:
+    enabled: true
+    weekday: 6          # 0 = Monday ... 6 = Sunday
+  # Coins the bot prefers for coin_focus. Top movers are added automatically.
+  watchlist: [BTC, ETH, BNB, SOL, XRP, DOGE, ADA, TON, AVAX, LINK, SUI, TRX]
+  # Ignore illiquid pairs (24h quote volume in USDT).
+  min_quote_volume_usdt: 20000000
+  # Do not write about the same coin again within this many hours.
+  coin_cooldown_hours: 12
+  # Attach a generated price chart to posts that focus on one coin.
+  charts: true
+  # Shown in the chart watermark. Put your Square handle here.
+  watermark: "Binance Square"
+
+quality:
+  # The reviewer model scores each draft 1-10. Below this it is rewritten once,
+  # then dropped.
+  min_score: 7
+  # 0-1 similarity to any of the last 60 posts. Above this the draft is dropped.
+  max_similarity: 0.55
+  max_cashtags: 3
+  short_post_chars: [280, 1400]
+  article_chars: [2500, 9000]
+
+news:
+  feeds:
+    - https://cointelegraph.com/rss
+    - https://www.coindesk.com/arc/outboundfeeds/rss/
+    - https://decrypt.co/feed
+  max_age_hours: 12
+
+# Your own voice. Edit persona.md: this is what keeps posts from reading like
+# generic AI output, and it is the single biggest lever on quality.
+persona_file: persona.md
+
+data_dir: data

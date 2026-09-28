@@ -1,0 +1,7 @@
+# Run one tick every 30 minutes. The bot's own gates (active hours, daily cap,
+# minimum gap, random skip) decide whether a post actually goes out.
+# Install with: crontab -e   (adjust the paths)
+*/30 * * * * cd /opt/agentic_binance && .venv/bin/w2e run >> data/cron.log 2>&1
+
+# Docker alternative:
+# */30 * * * * docker run --rm --env-file /opt/agentic_binance/.env -v /opt/agentic_binance/data:/app/data w2e run >> /opt/agentic_binance/data/cron.log 2>&1
