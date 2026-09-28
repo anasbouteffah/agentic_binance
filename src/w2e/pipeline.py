@@ -30,7 +30,8 @@ class TickResult:
     entry: HistoryEntry | None = None
 
 
-def schedule_gate(settings: Settings, store: Store, now: datetime, rng: random.Random) -> str | None:
+def schedule_gate(settings: Settings, store: Store, now: datetime, rng: random.Random,
+                  random_skip: bool = True) -> str | None:
     """Return a reason to skip this tick, or None if a post may go out."""
     sch = settings.schedule
     start, end = sch.active_hours_utc
@@ -45,7 +46,7 @@ def schedule_gate(settings: Settings, store: Store, now: datetime, rng: random.R
         return f"last post was less than {sch.min_minutes_between_posts} min ago"
     if settings.mode == "review" and len(store.queued()) >= sch.max_posts_per_day:
         return "review queue is full; approve or reject drafts first"
-    if rng.random() >= sch.post_probability:
+    if random_skip and rng.random() >= sch.post_probability:
         return "random skip (keeps posting times irregular)"
     return None
 
@@ -87,6 +88,18 @@ def publish_draft(settings: Settings, store: Store, draft: Draft, square: Square
     return entry
 
 
+def gather_brief(settings: Settings, store: Store, market: MarketClient | None, rng: random.Random,
+                 force_format: str | None = None, force_coin: str | None = None):
+    market = market or MarketClient()
+    snap = market.snapshot()
+    headlines = []
+    if settings.content.formats.get("news_take", 0) > 0 or force_format == "news_take":
+        headlines = fetch_headlines(settings.news.feeds, settings.news.max_age_hours)
+    brief = Planner(settings, store, market, rng).plan(snap, headlines, force_format, force_coin)
+    log.info("plan: %s %s", brief.format, brief.coins)
+    return brief, snap
+
+
 def run_tick(settings: Settings, *, force: bool = False, force_format: str | None = None,
              force_coin: str | None = None, market: MarketClient | None = None,
              writer: Writer | None = None, square: SquareClient | None = None,
@@ -103,14 +116,7 @@ def run_tick(settings: Settings, *, force: bool = False, force_format: str | Non
     if settings.mode == "auto" and square is None:
         square = SquareClient(resolve_api_key())
 
-    market = market or MarketClient()
-    snap = market.snapshot()
-    headlines = []
-    if settings.content.formats.get("news_take", 0) > 0 or force_format == "news_take":
-        headlines = fetch_headlines(settings.news.feeds, settings.news.max_age_hours)
-
-    brief = Planner(settings, store, market, rng).plan(snap, headlines, force_format, force_coin)
-    log.info("plan: %s %s", brief.format, brief.coins)
+    brief, snap = gather_brief(settings, store, market, rng, force_format, force_coin)
 
     result = produce_draft(settings, store, writer or Writer(settings), brief, snap.tradable_bases())
     if result.status == "rejected":

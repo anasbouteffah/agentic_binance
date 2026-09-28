@@ -7,3 +7,4 @@ venv/
 data/charts/
 data/queue/
 .pytest_cache/
+data/pending/

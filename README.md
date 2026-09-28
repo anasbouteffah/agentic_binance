@@ -62,7 +62,31 @@ Formats (weights in `config.yaml`): `market_pulse`, `coin_focus`, `news_take`,
 Every post carries 1-3 valid **$CASHTAGS**, because the cashtag is what opens the
 trade widget, and that trade is where commission comes from.
 
-## Setup
+## Two ways to run it
+
+| | **A. Claude Code routine (no Anthropic key)** | **B. Standalone server** |
+|---|---|---|
+| Who writes | Claude, inside a scheduled Claude Code session on your Claude plan | Claude via the Anthropic API |
+| Keys needed | Square key only | Square key + Anthropic API key |
+| Commands | `w2e brief` then `w2e submit` | `w2e run` |
+| Extra cost | none beyond your Claude plan usage | about $10-35/month API |
+
+### A. Claude Code routine (current setup)
+
+Each firing: `w2e brief --no-random-skip` gathers data, checks the schedule gates and
+prints a writing packet (rules, persona, data, recent posts, editor checklist).
+Claude writes and self-reviews the post, then `w2e submit --text-file post.txt`
+runs the same quality gate and publishes. `data/history.jsonl` is committed back to
+the repo so the next firing knows what was already posted.
+
+Needs, in the cloud environment settings:
+- **Network access** that allows Binance: `www.binance.com`, `data-api.binance.vision`,
+  `api.binance.com`, `fapi.binance.com`, `api.alternative.me`, the RSS sites, and the
+  image upload host Binance returns (an S3-style URL). The simplest is the unrestricted access level.
+- **Environment variable** `BINANCE_SQUARE_OPENAPI_KEY` with your Square key.
+
+### B. Standalone server
+
 
 1. **Binance Square key**: Binance app/web > Square > Creator Center > create an
    OpenAPI key. Account must be KYC-verified.
@@ -90,6 +114,8 @@ trade widget, and that trade is where commission comes from.
 | Command | What it does |
 |---|---|
 | `w2e run` | One scheduler tick. Cron calls this. |
+| `w2e brief [--no-random-skip]` | No-API mode: gates + data, prints the writing packet. |
+| `w2e submit --text-file F [--title T]` | No-API mode: quality gate, then publish. |
 | `w2e run --force [--mode dry-run] [--format F] [--coin SOL]` | Ignore the schedule, generate now. |
 | `w2e queue` | Show drafts waiting for review (review mode). |
 | `w2e approve <id> [--text-file edited.txt]` | Publish a draft, optionally your edited text. |

@@ -130,3 +130,22 @@ def test_writer_request_shape_and_refusal(settings):
     client.beta.messages.parse = lambda **kw: SimpleNamespace(stop_reason="refusal", stop_details="x", parsed_output=None)
     with pytest.raises(RuntimeError, match="declined"):
         w.write(brief, [])
+
+
+def test_session_brief_then_submit(settings, market):
+    from w2e.session import pending_path, prepare, submit
+
+    settings.mode = "auto"
+    res = prepare(settings, force=True, force_format="coin_focus", force_coin="SOL", market=market)
+    assert res.status == "ready" and "DATA (the only source of facts)" in res.packet and '"base": "SOL"' in res.packet
+
+    bad = submit(settings, "too short $SOL", square=FakeSquare())
+    assert not bad.ok and any("length" in p for p in bad.problems)
+    assert pending_path(settings).exists()
+
+    square = FakeSquare()
+    ok = submit(settings, GOOD, square=square)
+    assert ok.ok and ok.entry.status == "published"
+    assert square.calls[0][2].endswith(".png") and square.calls[0][1] is None
+    assert not pending_path(settings).exists()
+    assert not submit(settings, GOOD, square=square).ok  # brief consumed

@@ -51,6 +51,35 @@ def cmd_run(args, settings) -> int:
     return 1 if res.status == "failed" else 0
 
 
+def cmd_brief(args, settings) -> int:
+    from .session import prepare
+
+    res = prepare(settings, force=args.force, force_format=args.format, force_coin=args.coin,
+                  random_skip=not args.no_random_skip)
+    if res.status == "skipped":
+        print(f"status: skipped  {res.detail}")
+        return 0
+    print(res.packet)
+    return 0
+
+
+def cmd_submit(args, settings) -> int:
+    from .session import submit
+
+    if args.mode:
+        settings.mode = args.mode
+    text = Path(args.text_file).read_text(encoding="utf-8")
+    res = submit(settings, text, args.title)
+    if res.ok:
+        e = res.entry
+        print(f"status: {e.status}  {e.link or e.post_id or ''}")
+        return 0
+    print("status: rejected")
+    for p in res.problems:
+        print(f"- {p}")
+    return 1
+
+
 def cmd_queue(args, settings) -> int:
     drafts = Store(settings.data_path).queued()
     if not drafts:
@@ -119,6 +148,19 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--format", choices=FORMATS)
     r.add_argument("--coin", help="force a coin for coin_focus, e.g. SOL")
     r.set_defaults(fn=cmd_run)
+
+    b = sub.add_parser("brief", help="no-API mode: gather data and print a writing packet")
+    b.add_argument("--force", action="store_true", help="ignore schedule gates")
+    b.add_argument("--format", choices=FORMATS)
+    b.add_argument("--coin")
+    b.add_argument("--no-random-skip", action="store_true",
+                   help="keep the other gates but never skip at random (for fixed-time schedulers)")
+    b.set_defaults(fn=cmd_brief)
+    sm = sub.add_parser("submit", help="no-API mode: check and publish a post written for the pending brief")
+    sm.add_argument("--text-file", required=True)
+    sm.add_argument("--title")
+    sm.add_argument("--mode", choices=["auto", "dry-run"], help="override config mode")
+    sm.set_defaults(fn=cmd_submit)
 
     sub.add_parser("queue", help="list drafts waiting for review").set_defaults(fn=cmd_queue)
     a = sub.add_parser("approve", help="publish a queued draft")
