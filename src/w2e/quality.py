@@ -32,6 +32,17 @@ AI_TELLS = [
 ]
 
 
+# Tags on nearly every crypto post: no discovery value, and they make posts look templated.
+GENERIC_HASHTAGS = {
+    "crypto", "cryptocurrency", "trading", "bitcoin", "btc", "binance", "binancesquare", "altcoins",
+    "altcoin", "cryptonews", "blockchain", "investing", "web3", "defi",
+}
+
+
+def hashtag_set(text: str) -> set[str]:
+    return {h.lower() for h in re.findall(r"(?<![\w&])#([A-Za-z][\w]*)", text)}
+
+
 @dataclass
 class CheckResult:
     ok: bool
@@ -92,9 +103,18 @@ def check_draft(text: str, title: str | None, settings: QualitySettings, tradabl
         problems.append("contains a link (external links hurt reach and can look like spam)")
     if text.count("—") > 1:
         problems.append("more than one em dash (a common AI-writing tell)")
-    hashtags = re.findall(r"#\w+", text)
-    if len(hashtags) > 4:
-        problems.append(f"{len(hashtags)} hashtags, max 4")
+    hashtags = hashtag_set(text)
+    if len(hashtags) > settings.max_hashtags:
+        problems.append(f"{len(hashtags)} hashtags, max {settings.max_hashtags} (more reads as spam)")
+    if hashtags:
+        last_line = text.strip().splitlines()[-1]
+        if hashtag_set(last_line) != hashtags:
+            problems.append("hashtags must all be on the last line, after the text")
+        generic = sorted(hashtags & GENERIC_HASHTAGS)
+        if generic:
+            problems.append(f"generic hashtags add nothing: {', '.join('#' + g for g in generic)}")
+        if previous_texts and hashtags == hashtag_set(previous_texts[-1]):
+            problems.append("same hashtags as the previous post (repeated tags look templated)")
     emoji_count = len(re.findall(r"[\U0001F300-\U0001FAFF☀-➿]", text))
     if emoji_count > 3:
         problems.append(f"{emoji_count} emojis, max 3")

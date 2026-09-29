@@ -42,6 +42,7 @@ class QualitySettings(BaseModel):
     min_score: int = 7
     max_similarity: float = 0.55
     max_cashtags: int = 3
+    max_hashtags: int = 2
     short_post_chars: tuple[int, int] = (280, 1400)
     article_chars: tuple[int, int] = (2500, 9000)
 

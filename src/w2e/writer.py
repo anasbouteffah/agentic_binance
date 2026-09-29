@@ -77,7 +77,9 @@ HARD RULES
 3. Give a real opinion with a reason. Say what would prove you wrong. Never promise profit, never tell
    readers to buy or sell, no price targets presented as certain.
 4. No links, no referral codes, no "follow me", no requests for likes or comments.
-5. At most 2 hashtags, at the very end. At most 2 emojis in the whole post. Zero is fine.
+5. End with 1 or 2 hashtags on their own last line, specific to this post: the project or the event
+   (e.g. #Aave, #BitcoinETF, #FearAndGreed). No generic tags (#crypto, #trading, #bitcoin, #BinanceSquare)
+   and not the same hashtags as the author's previous post. At most 2 emojis in the whole post. Zero is fine.
 6. Sound like a person, not a content farm: vary sentence length, no filler intro, start with the point.
    Never use: "let's dive in", "delve", "in the ever-evolving", "buckle up", "game-changer",
    "it's important to note", "in conclusion", "stay tuned", "not financial advice".

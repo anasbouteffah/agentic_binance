@@ -41,3 +41,17 @@ def test_rejects_near_duplicate():
 def test_length_limits_depend_on_type():
     r = check_draft(GOOD, "A title", QualitySettings(), TRADABLE, [])
     assert any("length" in p for p in r.problems)
+
+
+def test_hashtag_rules():
+    body = GOOD.replace(" #Solana", "")
+    ok = check_draft(body + "\n\n#Solana #SolanaETF", None, QualitySettings(), TRADABLE, [])
+    assert ok.ok, ok.problems
+    too_many = check_draft(body + "\n\n#Solana #SOLUSDT #Layer1", None, QualitySettings(), TRADABLE, [])
+    assert any("max 2" in p for p in too_many.problems)
+    generic = check_draft(body + "\n\n#Solana #crypto", None, QualitySettings(), TRADABLE, [])
+    assert any("generic" in p for p in generic.problems)
+    middle = check_draft("#Solana " + body + "\n\n#SolanaETF", None, QualitySettings(), TRADABLE, [])
+    assert any("last line" in p for p in middle.problems)
+    repeat = check_draft(body + "\n\n#Solana", None, QualitySettings(), TRADABLE, ["older post\n#solana"])
+    assert any("previous post" in p for p in repeat.problems)
