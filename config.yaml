@@ -17,10 +17,11 @@ llm:
 schedule:
   # Binance's OpenAPI allows 100 posts/day, but volume is what gets accounts
   # flagged. A few strong posts per day beat many weak ones.
-  max_posts_per_day: 3
-  min_minutes_between_posts: 180
+  max_posts_per_day: 24
+  # Scheduler fires hourly; 50 min leaves room for timing drift.
+  min_minutes_between_posts: 50
   # Only publish between these UTC hours (start inclusive, end exclusive).
-  active_hours_utc: [7, 22]
+  active_hours_utc: [0, 24]
   # Chance that a scheduler tick which passes every gate actually posts.
   # Below 1.0 spreads posting times so they do not look machine-regular.
   post_probability: 0.6
@@ -41,7 +42,7 @@ content:
   # Ignore illiquid pairs (24h quote volume in USDT).
   min_quote_volume_usdt: 20000000
   # Do not write about the same coin again within this many hours.
-  coin_cooldown_hours: 12
+  coin_cooldown_hours: 6
   # Attach a generated price chart to posts that focus on one coin.
   charts: true
   # Shown in the chart watermark. Put your Square handle here.
