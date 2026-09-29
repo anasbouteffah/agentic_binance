@@ -57,3 +57,17 @@ def test_error_codes_and_504():
     assert e.value.permanent and "100/day" in str(e.value)
     route.mock(return_value=httpx.Response(504, text="timeout"))
     assert SquareClient("key").publish("x").post_id is None
+
+
+@respx.mock
+def test_check_command_validates_key_without_publishing(market_mock, settings, monkeypatch, capsys):
+    from w2e import cli
+
+    monkeypatch.setenv("BINANCE_SQUARE_OPENAPI_KEY", "abcdefghijklmnop")
+    add = respx.post(f"{BASE_URL_V1}/content/add").mock(
+        return_value=httpx.Response(200, json={"code": "220011", "message": "empty"}))
+    assert cli.cmd_check(None, settings) == 0
+    assert json.loads(add.calls.last.request.content)["bodyTextOnly"] == ""
+    assert "is valid" in capsys.readouterr().out
+    add.mock(return_value=httpx.Response(200, json={"code": "220003", "message": "not found"}))
+    assert cli.cmd_check(None, settings) == 1

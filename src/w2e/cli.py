@@ -80,6 +80,41 @@ def cmd_submit(args, settings) -> int:
     return 1
 
 
+def cmd_check(args, settings) -> int:
+    """Connectivity and key check. Publishes nothing."""
+    from .market import MarketClient
+    from .news import fetch_headlines
+    from .square import BASE_URL_V1, SquareError
+
+    ok = True
+    try:
+        snap = MarketClient().snapshot()
+        btc = snap.tickers.get("BTC")
+        print(f"[ok]   Binance spot data: {len(snap.tickers)} USDT pairs, BTC {btc.price if btc else '?'}")
+        print(f"[{'ok' if snap.funding else 'warn'}] futures funding rates: {len(snap.funding)} pairs")
+        print(f"[{'ok' if snap.fear_greed else 'warn'}] fear & greed: {snap.fear_greed}")
+    except Exception as e:  # noqa: BLE001 - report every failure kind
+        ok = False
+        print(f"[FAIL] Binance spot data: {e}")
+    news = fetch_headlines(settings.news.feeds, 48)
+    print(f"[{'ok' if news else 'warn'}] news headlines (48h): {len(news)}")
+    try:
+        key = resolve_api_key()
+        # An empty post is rejected before publishing; the error code tells us if the key is valid.
+        SquareClient(key)._api("/content/add", {"contentType": 1, "bodyTextOnly": ""}, BASE_URL_V1)
+        print("[warn] Square accepted an empty post request; check your Square profile")
+    except SquareError as e:
+        if e.code in ("20020", "220011"):
+            print(f"[ok]   Square key {mask_key(key)} is valid (empty test post rejected as expected)")
+        else:
+            ok = False
+            print(f"[FAIL] Square: {e}")
+    except Exception as e:  # noqa: BLE001
+        ok = False
+        print(f"[FAIL] Square: {e}")
+    return 0 if ok else 1
+
+
 def cmd_queue(args, settings) -> int:
     drafts = Store(settings.data_path).queued()
     if not drafts:
@@ -162,6 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     sm.add_argument("--mode", choices=["auto", "dry-run"], help="override config mode")
     sm.set_defaults(fn=cmd_submit)
 
+    sub.add_parser("check", help="test Binance data access and the Square key (publishes nothing)").set_defaults(fn=cmd_check)
     sub.add_parser("queue", help="list drafts waiting for review").set_defaults(fn=cmd_queue)
     a = sub.add_parser("approve", help="publish a queued draft")
     a.add_argument("id")
