@@ -39,6 +39,8 @@ class Brief:
     coins: list[str]
     data: dict
     chart: CoinDetail | None = None
+    # Market snapshot brief to draw as a 24h movers chart when there is no single-coin chart.
+    movers: dict | None = None
     article: bool = False
     notes: list[str] = field(default_factory=list)
 
@@ -69,7 +71,9 @@ class Planner:
         if fmt == "weekly_article":
             return self._weekly(snap)
         if fmt == "market_pulse":
-            return Brief("market_pulse", [], {"market": snap.brief(self.s.content.min_quote_volume_usdt)})
+            market = snap.brief(self.s.content.min_quote_volume_usdt)
+            return Brief("market_pulse", [], {"market": market},
+                         movers=market if self.s.content.charts else None)
         if fmt == "news_take":
             brief = self._news(snap, headlines)
             if brief:
@@ -142,7 +146,7 @@ class Planner:
         detail = self.market.coin_detail(snap, coin)
         data = {"topic": topic, "live_example": detail.brief(),
                 "market": snap.brief(self.s.content.min_quote_volume_usdt)}
-        return Brief("explainer", [coin], data)
+        return Brief("explainer", [coin], data, chart=detail if self.s.content.charts else None)
 
     def _weekly(self, snap: MarketSnapshot) -> Brief:
         min_vol = self.s.content.min_quote_volume_usdt

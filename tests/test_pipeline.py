@@ -149,3 +149,26 @@ def test_session_brief_then_submit(settings, market):
     assert square.calls[0][2].endswith(".png") and square.calls[0][1] is None
     assert not pending_path(settings).exists()
     assert not submit(settings, GOOD, square=square).ok  # brief consumed
+
+
+@pytest.mark.parametrize("fmt", ["market_pulse", "explainer"])
+def test_posts_without_single_coin_still_get_an_image(settings, market, fmt):
+    settings.mode = "auto"
+    writer = FakeWriter([PostDraft(title="", text=GOOD)], [Review(score=8, factual_errors=[], issues=[])])
+    square = FakeSquare()
+    res = run_tick(settings, force=True, force_format=fmt, market=market, writer=writer, square=square)
+    assert res.status == "published", res.detail
+    image = square.calls[0][2]
+    assert image and image.endswith(".png")
+    assert ("movers_" in image) == (fmt == "market_pulse")
+
+
+def test_fmt_price_never_uses_scientific_notation():
+    from w2e.charts import fmt_price
+
+    assert fmt_price(87278.54) == "87,279"
+    assert fmt_price(272.66) == "272.66"
+    assert fmt_price(0.005904) == "0.005904"
+    assert fmt_price(0.00000426) == "0.00000426"
+    for v in (1e9, 12.3, 0.5, 3e-8):
+        assert "e" not in fmt_price(v)

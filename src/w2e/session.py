@@ -12,7 +12,7 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from .charts import render_price_chart
+from .charts import render_brief_image
 from .config import Settings
 from .market import MarketClient
 from .pipeline import gather_brief, publish_draft, schedule_gate
@@ -44,9 +44,8 @@ def prepare(settings: Settings, *, force: bool = False, force_format: str | None
             return BriefResult("skipped", reason)
 
     brief, snap = gather_brief(settings, store, market, rng, force_format, force_coin)
-    image = None
-    if brief.chart is not None:
-        image = str(render_price_chart(brief.chart, settings.data_path / "charts", settings.content.watermark))
+    img = render_brief_image(brief, settings.data_path / "charts", settings.content.watermark)
+    image = str(img) if img is not None else None
 
     pending = {
         "format": brief.format, "coins": brief.coins, "article": brief.article, "data": brief.data,
@@ -61,7 +60,9 @@ def prepare(settings: Settings, *, force: bool = False, force_format: str | None
 def render_packet(settings: Settings, store: Store, pending: dict) -> str:
     kind = "long-form ARTICLE with a title" if pending["article"] else "SHORT POST (no title)"
     recent = "\n".join(f"- {t[:160]!r}" for t in store.recent_texts(60)[-6:]) or "(none yet)"
-    chart = (f"A 7-day chart of the main coin will be attached ({pending['image_path']}). You may refer to it."
+    chart = (f"This image will be attached ({pending['image_path']}): "
+             f"{'a 24h movers bar chart' if 'movers_' in pending['image_path'] else 'a 7-day price chart of the main coin'}. "
+             "You may refer to it."
              if pending["image_path"] else "No image will be attached.")
     return f"""# WRITING TASK
 Write one {kind}. Format: {pending['format']}.

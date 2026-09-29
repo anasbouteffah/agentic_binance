@@ -7,7 +7,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from .charts import render_price_chart
+from .charts import render_brief_image
 from .config import Settings
 from .market import MarketClient
 from .news import fetch_headlines
@@ -124,9 +124,9 @@ def run_tick(settings: Settings, *, force: bool = False, force_format: str | Non
     draft = result.draft
     assert draft is not None
 
-    if brief.chart is not None:
-        draft.image_path = str(render_price_chart(brief.chart, settings.data_path / "charts",
-                                                  settings.content.watermark))
+    image = render_brief_image(brief, settings.data_path / "charts", settings.content.watermark)
+    if image is not None:
+        draft.image_path = str(image)
 
     if settings.mode == "review":
         store.enqueue(draft)

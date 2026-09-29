@@ -134,6 +134,8 @@ class Writer:
         ]
         if brief.chart is not None:
             parts.append("A 7-day price chart of the main coin is attached to the post; you may refer to it.")
+        elif getattr(brief, "movers", None):
+            parts.append("A 24h movers bar chart (gainers, majors, losers) is attached; you may refer to it.")
         if feedback:
             parts.append("YOUR PREVIOUS DRAFT WAS REJECTED. Fix all of these:\n" + "\n".join(f"- {f}" for f in feedback))
         draft = self._parse(system_prompt(self.s), "\n\n".join(parts), PostDraft, 16000)
