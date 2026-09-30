@@ -55,3 +55,7 @@ def test_hashtag_rules():
     assert any("last line" in p for p in middle.problems)
     repeat = check_draft(body + "\n\n#Solana", None, QualitySettings(), TRADABLE, ["older post\n#solana"])
     assert any("previous post" in p for p in repeat.problems)
+
+
+def test_cashtags_allow_digit_tickers_but_not_money():
+    assert cashtags("$0G and $1INCH beat $BTC, not $100") == ["0G", "1INCH", "BTC"]

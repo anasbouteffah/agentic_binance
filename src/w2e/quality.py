@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 
 from .config import QualitySettings
 
-CASHTAG_RE = re.compile(r"\$([A-Z][A-Z0-9]{1,14})\b")
+# Tickers may start with a digit ($0G, $1INCH) but must contain a letter ($100 is money).
+CASHTAG_RE = re.compile(r"\$((?=[A-Z0-9]*[A-Z])[A-Z0-9]{2,15})\b")
 URL_RE = re.compile(r"https?://|www\.", re.I)
 
 # Hype and promise language: risk of "misleading" moderation and of losing eligibility.

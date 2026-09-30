@@ -86,6 +86,11 @@ class Store:
         since = utcnow() - timedelta(hours=hours)
         return {c for h in self.published_since(since) for c in h.coins}
 
+    def recent_main_coins(self, hours: int) -> set[str]:
+        """Only the first cashtag of each post: the coin the post was about."""
+        since = utcnow() - timedelta(hours=hours)
+        return {h.coins[0] for h in self.published_since(since) if h.coins}
+
     def last_format(self) -> str | None:
         last = self.last_published()
         return last.format if last else None

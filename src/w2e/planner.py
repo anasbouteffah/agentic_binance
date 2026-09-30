@@ -126,9 +126,10 @@ class Planner:
     def _news(self, snap: MarketSnapshot, headlines: list[Headline]) -> Brief | None:
         tradable = snap.tradable_bases()
         used = " ".join(self.store.recent_texts(30)).lower()
+        cooldown = self.store.recent_main_coins(self.s.content.coin_cooldown_hours)
         for h in headlines:
             coins = coins_in_headline(h, tradable)
-            if not coins or h.title.lower()[:60] in used:
+            if not coins or h.title.lower()[:60] in used or coins[0] in cooldown:
                 continue
             detail = self.market.coin_detail(snap, coins[0])
             data = {"headline": h.brief(), "coin": detail.brief(),
@@ -142,7 +143,11 @@ class Planner:
         recent = " ".join(self.store.recent_texts(20)).lower()
         topics = [t for t in EXPLAINER_TOPICS if t.split(":")[0][:25].lower() not in recent] or EXPLAINER_TOPICS
         topic = self.rng.choice(topics)
-        coin = "BTC" if "BTC" in snap.tickers else next(iter(snap.tickers))
+        # Rotate the worked example so the feed is not BTC every time.
+        cooldown = self.store.recent_main_coins(self.s.content.coin_cooldown_hours)
+        majors = [b for b in ("BTC", "ETH", "SOL", "BNB", "XRP") if b in snap.tickers]
+        fresh = [b for b in majors if b not in cooldown]
+        coin = (fresh or majors or list(snap.tickers))[0]
         detail = self.market.coin_detail(snap, coin)
         data = {"topic": topic, "live_example": detail.brief(),
                 "market": snap.brief(self.s.content.min_quote_volume_usdt)}

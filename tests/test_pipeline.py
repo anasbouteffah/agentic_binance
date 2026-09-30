@@ -172,3 +172,30 @@ def test_fmt_price_never_uses_scientific_notation():
     assert fmt_price(0.00000426) == "0.00000426"
     for v in (1e9, 12.3, 0.5, 3e-8):
         assert "e" not in fmt_price(v)
+
+
+def test_explainer_rotates_away_from_recent_main_coin(settings, market):
+    store = Store(settings.data_path)
+    store.append(_entry(30, fmt="news_take", coins=("BTC",)))
+    planner = Planner(settings, store, market, random.Random(1))
+    brief = planner.plan(market.snapshot(), [], force_format="explainer")
+    assert brief.coins[0] != "BTC"
+
+
+def test_news_skips_headline_on_cooldown_coin(settings, market):
+    from w2e.news import Headline
+
+    store = Store(settings.data_path)
+    store.append(_entry(30, fmt="coin_focus", coins=("BTC", "ETH")))
+    h = Headline(title="Bitcoin ETF flows", summary="Bitcoin funds add inflows", source="x", link="", published=utcnow())
+    planner = Planner(settings, store, market, random.Random(1))
+    assert planner._news(market.snapshot(), [h]) is None
+
+
+def test_news_uses_headline_when_coin_not_on_cooldown(settings, market):
+    from w2e.news import Headline
+
+    store = Store(settings.data_path)
+    h = Headline(title="Bitcoin ETF flows", summary="Bitcoin funds add inflows", source="x", link="", published=utcnow())
+    brief = Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [h])
+    assert brief is not None and brief.coins[0] == "BTC"
