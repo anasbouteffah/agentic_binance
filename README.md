@@ -31,6 +31,17 @@ posts score zero in CreatorPad campaigns.
 This shapes the whole design: **few posts, real data, a real voice, strict filters.**
 Posting 100 generic posts a day is the fastest way to earn nothing.
 
+### Account milestones (Creator Academy, read Sept 2026)
+
+| Milestone | Requirement | Why it matters |
+|---|---|---|
+| **Tips** | 1,000 followers, then enable in Creator Center > Tips | Readers can tip in crypto; you keep 100% |
+| **Verified (gold badge)** | Full profile + 30K followers, no violation record, at least 1 post per quarter | Priority ranking in search and recommendations |
+| **Verified+** | Verified + 300K views or 1M USD Write to Earn volume in the quarter | Same, renewed each quarter |
+
+A single violation record blocks the badge. That is one more reason the bot
+filters hard for quality instead of volume.
+
 ### Realistic expectations
 
 - Income = your readers' trading fees x 20%. A new account with no followers
