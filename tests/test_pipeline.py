@@ -199,3 +199,13 @@ def test_news_uses_headline_when_coin_not_on_cooldown(settings, market):
     h = Headline(title="Bitcoin ETF flows", summary="Bitcoin funds add inflows", source="x", link="", published=utcnow())
     brief = Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [h])
     assert brief is not None and brief.coins[0] == "BTC"
+
+
+def test_news_prefers_non_btc_headline(settings, market):
+    from w2e.news import Headline
+
+    store = Store(settings.data_path)
+    btc = Headline(title="Bitcoin ETF flows", summary="Bitcoin funds", source="x", link="", published=utcnow())
+    sol = Headline(title="Solana upgrade ships", summary="Solana network", source="x", link="", published=utcnow())
+    brief = Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [btc, sol])
+    assert brief is not None and brief.coins[0] == "SOL"

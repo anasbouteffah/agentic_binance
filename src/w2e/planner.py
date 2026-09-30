@@ -127,6 +127,8 @@ class Planner:
         tradable = snap.tradable_bases()
         used = " ".join(self.store.recent_texts(30)).lower()
         cooldown = self.store.recent_main_coins(self.s.content.coin_cooldown_hours)
+        # BTC headlines are the most crowded topic on Square: use them only if nothing else fits.
+        headlines = sorted(headlines, key=lambda h: coins_in_headline(h, tradable)[:1] == ["BTC"])
         for h in headlines:
             coins = coins_in_headline(h, tradable)
             if not coins or h.title.lower()[:60] in used or coins[0] in cooldown:

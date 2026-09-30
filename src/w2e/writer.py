@@ -35,7 +35,8 @@ class Review(BaseModel):
 FORMAT_GUIDE = {
     "market_pulse": (
         "A short market read of the last 24h. Pick the ONE thing that matters most today (a big mover, "
-        "a volume anomaly, sentiment shift, funding extreme) and build the post around it. Mention at most "
+        "a volume anomaly, sentiment shift, funding extreme) and build the post around it. Prefer a coin with "
+        "a standout move over BTC/ETH unless the majors themselves are the story. Mention at most "
         "3 coins. Do not just list gainers and losers; say what it means and what you are watching next."
     ),
     "coin_focus": (
@@ -81,6 +82,8 @@ HARD RULES
    (e.g. #Aave, #BitcoinETF, #FearAndGreed). No generic tags (#crypto, #trading, #bitcoin, #BinanceSquare)
    and not the same hashtags as the author's previous post. At most 2 emojis in the whole post. Zero is fine.
 6. Sound like a person, not a content farm: vary sentence length, no filler intro, start with the point.
+   The feed preview shows only about two lines: the first sentence must carry the main $CASHTAG and the
+   single most striking number (e.g. "$QNT is up 271% in seven days."), in a different wording each time.
    Never use: "let's dive in", "delve", "in the ever-evolving", "buckle up", "game-changer",
    "it's important to note", "in conclusion", "stay tuned", "not financial advice".
    Do not use em dashes. Do not use markdown (no **, no #, no bullet symbols); use line breaks.

@@ -30,9 +30,11 @@ schedule:
 content:
   # Relative weights. The planner never picks the same format twice in a row.
   formats:
+    # Sept 30 stats: posts on altcoins with big moves got 150-470 views,
+    # BTC-centred posts 12-35. Weight toward coin_focus on top movers.
     market_pulse: 3     # top movers of the day, with numbers
-    coin_focus: 4       # one coin: price action, volume, funding, levels
-    news_take: 2        # an opinion on a fresh headline, backed by market data
+    coin_focus: 6       # one coin: price action, volume, funding, levels
+    news_take: 1        # an opinion on a fresh headline, backed by market data
     explainer: 1        # a concept explained with today's data as the example
   # One long-form article per week (Square "article" type, with chart cover).
   weekly_article:
