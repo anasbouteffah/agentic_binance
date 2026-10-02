@@ -209,3 +209,11 @@ def test_news_prefers_non_btc_headline(settings, market):
     sol = Headline(title="Solana upgrade ships", summary="Solana network", source="x", link="", published=utcnow())
     brief = Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [btc, sol])
     assert brief is not None and brief.coins[0] == "SOL"
+
+
+def test_trending_hashtags_skip_expired_and_comments(tmp_path):
+    from w2e.session import trending_hashtags
+    f = tmp_path / "trending.txt"
+    f.write_text("# comment\n#Live 2026-10-04 macro posts\n#Old 2026-09-01 stale\nbad line\n", encoding="utf-8")
+    assert trending_hashtags(f, today="2026-10-02") == ["#Live: macro posts"]
+    assert trending_hashtags(tmp_path / "missing.txt") == []

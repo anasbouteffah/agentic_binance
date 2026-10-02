@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -57,6 +58,24 @@ def prepare(settings: Settings, *, force: bool = False, force_format: str | None
     return BriefResult("ready", str(p), render_packet(settings, store, pending))
 
 
+TRENDING_FILE = Path(__file__).resolve().parents[2] / "trending.txt"
+
+
+def trending_hashtags(path: Path = TRENDING_FILE, today: str | None = None) -> list[str]:
+    """Unexpired lines of trending.txt: '#Tag YYYY-MM-DD when to use it'."""
+    today = today or utcnow().date().isoformat()
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        m = re.match(r"(#\w\S*)\s+(\d{4}-\d{2}-\d{2})\s+(.+)", line.strip())
+        if m and m.group(2) >= today:
+            out.append(f"{m.group(1)}: {m.group(3)}")
+    return out
+
+
 def render_packet(settings: Settings, store: Store, pending: dict) -> str:
     kind = "long-form ARTICLE with a title" if pending["article"] else "SHORT POST (no title)"
     recent = "\n".join(f"- {t[:160]!r}" for t in store.recent_texts(60)[-6:]) or "(none yet)"
@@ -64,6 +83,11 @@ def render_packet(settings: Settings, store: Store, pending: dict) -> str:
              f"{'a 24h movers bar chart' if 'movers_' in pending['image_path'] else 'a 7-day price chart of the main coin'}. "
              "You may refer to it."
              if pending["image_path"] else "No image will be attached.")
+    tags = trending_hashtags()
+    trending = ("Trending tags put a post in a feed many more people read. If, and only if, this post is "
+                "really about one of these topics, use that tag as one of your 1-2 hashtags. Never add a "
+                "trending tag to an unrelated post (that is tag spam):\n" + "\n".join(f"- {t}" for t in tags)
+                if tags else "(none listed)")
     return f"""# WRITING TASK
 Write one {kind}. Format: {pending['format']}.
 {chart}
@@ -79,6 +103,9 @@ Write one {kind}. Format: {pending['format']}.
 
 ## Author's recent posts (do not repeat their openings, angles or structure)
 {recent}
+
+## Trending hashtags on Square now
+{trending}
 
 ## Self-review before submitting
 {REVIEW_SYSTEM}

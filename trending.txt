@@ -1,0 +1,6 @@
+# Trending hashtags from the Square "Sujets d'actualite" panel. Edit by hand.
+# Format: <hashtag> <expires YYYY-MM-DD> <what a post must be about to use it>
+# The writer may use ONE of these, only when the post really is about that topic.
+# Expired lines are ignored automatically.
+#NFPWatch 2026-10-04 US jobs report (NFP), Treasury yields or macro effect on BTC
+#BitcoinFundingRateTriplesTo10% 2026-10-04 BTC funding rates, only if DATA has a funding number
