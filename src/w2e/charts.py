@@ -70,8 +70,9 @@ def _new_figure():
 
 def _footer(fig, source: str, watermark: str) -> None:
     fig.text(0.03, 0.03, source, color=MUTED, fontsize=14)
+    # Centered: Square stamps its own "@handle" over the bottom-right corner.
     if watermark:
-        fig.text(0.97, 0.03, watermark, color=ACCENT, fontsize=16, ha="right", alpha=0.85)
+        fig.text(0.5, 0.03, watermark, color=ACCENT, fontsize=16, ha="center", alpha=0.85)
 
 
 def _save(fig, out_dir: Path, name: str) -> Path:
