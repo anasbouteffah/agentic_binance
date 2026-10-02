@@ -49,8 +49,8 @@ content:
   coin_cooldown_hours: 12
   # Attach a generated price chart to posts that focus on one coin.
   charts: true
-  # Shown in the chart watermark. Put your Square handle here.
-  watermark: "Binance Square"
+  # Chart watermark text. Empty: Square already stamps the "@handle" on images.
+  watermark: ""
 
 quality:
   # The reviewer model scores each draft 1-10. Below this it is rewritten once,
