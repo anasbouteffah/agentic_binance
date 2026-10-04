@@ -15,6 +15,8 @@ One run publishes at most one post.
    w2e brief --no-random-skip
    ```
    If it prints `status: skipped ...`, stop here. Do not commit anything.
+   A skip is normal: the bot only posts when a coin moved enough or a
+   follow-up is due.
 3. Write the post exactly as the packet says: persona, hard rules, only numbers
    from DATA, 1-3 valid $CASHTAGS, plain text. Then review it yourself with the
    editor checklist in the packet. Rewrite until you would score it 7+ with zero
@@ -35,5 +37,6 @@ One run publishes at most one post.
    ```
 6. Reply with one line: the status and the post link.
 
-Never: publish more than one post per run, change `config.yaml` or `persona.md`,
+Never: publish more than one post per run, change `config.yaml` or `persona.md`
+(unless the owner asks in the chat),
 print the API key, or add links, referral codes or engagement bait to posts.

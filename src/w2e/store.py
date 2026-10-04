@@ -21,6 +21,8 @@ class Draft:
     coins: list[str] = field(default_factory=list)
     image_path: str | None = None
     score: int | None = None
+    # Main coin's price/volume when the post was written; lets a later run write a follow-up.
+    ref: dict | None = None
     review_notes: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: uuid4().hex[:10])
     created_at: str = field(default_factory=lambda: utcnow().isoformat())
@@ -42,6 +44,7 @@ class HistoryEntry:
     post_id: str | None = None
     link: str | None = None
     error: str | None = None
+    ref: dict | None = None
 
     @property
     def published_dt(self) -> datetime:

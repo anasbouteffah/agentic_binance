@@ -16,7 +16,7 @@ from pathlib import Path
 from .charts import render_brief_image
 from .config import Settings
 from .market import MarketClient
-from .pipeline import gather_brief, publish_draft, schedule_gate
+from .pipeline import NO_STORY, gather_brief, publish_draft, schedule_gate
 from .quality import cashtags, check_draft
 from .square import SquareClient, resolve_api_key
 from .store import Draft, HistoryEntry, Store, utcnow
@@ -45,6 +45,8 @@ def prepare(settings: Settings, *, force: bool = False, force_format: str | None
             return BriefResult("skipped", reason)
 
     brief, snap = gather_brief(settings, store, market, rng, force_format, force_coin)
+    if brief is None:
+        return BriefResult("skipped", NO_STORY)
     img = render_brief_image(brief, settings.data_path / "charts", settings.content.watermark)
     image = str(img) if img is not None else None
 
@@ -56,6 +58,25 @@ def prepare(settings: Settings, *, force: bool = False, force_format: str | None
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(pending, ensure_ascii=False, indent=1), encoding="utf-8")
     return BriefResult("ready", str(p), render_packet(settings, store, pending))
+
+
+def coin_ref(data: dict, coin: str | None) -> dict | None:
+    """Price, 24h change and volume of `coin` as the brief showed them, for later follow-ups."""
+    if not coin:
+        return None
+    for key in ("coin", "live_example"):
+        d = data.get(key)
+        if isinstance(d, dict) and d.get("base") == coin:
+            return {"coin": coin, "price": d.get("price"), "change_24h_pct": d.get("change_24h_pct"),
+                    "volume_24h_usdt": d.get("volume_24h_usdt")}
+    market = data.get("market") or {}
+    for key in ("top_gainers", "top_losers", "majors", "top_volume"):
+        for r in market.get(key, []) if isinstance(market, dict) else []:
+            if r.get("coin") == coin:
+                vol = r.get("volume_24h_usdt_m")
+                return {"coin": coin, "price": r.get("price"), "change_24h_pct": r.get("change_24h_pct"),
+                        "volume_24h_usdt": vol * 1e6 if vol is not None else None}
+    return None
 
 
 TRENDING_FILE = Path(__file__).resolve().parents[2] / "trending.txt"
@@ -143,8 +164,9 @@ def submit(settings: Settings, text: str, title: str | None = None,
     if not check.ok:
         return SubmitResult(False, check.problems)
 
-    draft = Draft(format=pending["format"], text=text, title=title, coins=cashtags(text),
-                  image_path=pending["image_path"])
+    coins = cashtags(text)
+    draft = Draft(format=pending["format"], text=text, title=title, coins=coins,
+                  image_path=pending["image_path"], ref=coin_ref(pending["data"], coins[0] if coins else None))
     if settings.mode == "auto" and square is None:
         square = SquareClient(resolve_api_key())
     entry = publish_draft(settings, store, draft, square if settings.mode == "auto" else None)

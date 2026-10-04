@@ -73,7 +73,8 @@ def produce_draft(settings: Settings, store: Store, writer: Writer, brief: Brief
 
 def publish_draft(settings: Settings, store: Store, draft: Draft, square: SquareClient | None) -> HistoryEntry:
     entry = HistoryEntry(draft_id=draft.id, format=draft.format, coins=draft.coins, text=draft.text,
-                         title=draft.title, status="dry-run", published_at=utcnow().isoformat())
+                         title=draft.title, status="dry-run", published_at=utcnow().isoformat(),
+                         ref=draft.ref)
     if square is None:
         store.append(entry)
         return entry
@@ -88,6 +89,9 @@ def publish_draft(settings: Settings, store: Store, draft: Draft, square: Square
     return entry
 
 
+NO_STORY = "no strong story right now (no fresh coin above the minimum move, no follow-up)"
+
+
 def gather_brief(settings: Settings, store: Store, market: MarketClient | None, rng: random.Random,
                  force_format: str | None = None, force_coin: str | None = None):
     market = market or MarketClient()
@@ -96,7 +100,8 @@ def gather_brief(settings: Settings, store: Store, market: MarketClient | None, 
     if settings.content.formats.get("news_take", 0) > 0 or force_format == "news_take":
         headlines = fetch_headlines(settings.news.feeds, settings.news.max_age_hours)
     brief = Planner(settings, store, market, rng).plan(snap, headlines, force_format, force_coin)
-    log.info("plan: %s %s", brief.format, brief.coins)
+    if brief:
+        log.info("plan: %s %s", brief.format, brief.coins)
     return brief, snap
 
 
@@ -117,6 +122,8 @@ def run_tick(settings: Settings, *, force: bool = False, force_format: str | Non
         square = SquareClient(resolve_api_key())
 
     brief, snap = gather_brief(settings, store, market, rng, force_format, force_coin)
+    if brief is None:
+        return TickResult("skipped", NO_STORY)
 
     result = produce_draft(settings, store, writer or Writer(settings), brief, snap.tradable_bases())
     if result.status == "rejected":

@@ -10,7 +10,7 @@ from datetime import timedelta
 from .config import Settings
 from .market import CoinDetail, MarketClient, MarketSnapshot
 from .news import Headline
-from .store import Store, utcnow
+from .store import HistoryEntry, Store, utcnow
 
 EXPLAINER_TOPICS = [
     "what funding rates tell you about crowd positioning",
@@ -66,14 +66,24 @@ class Planner:
         self.rng = rng or random.Random()
 
     def plan(self, snap: MarketSnapshot, headlines: list[Headline], force_format: str | None = None,
-             force_coin: str | None = None) -> Brief:
+             force_coin: str | None = None) -> Brief | None:
+        """The brief for the next post, or None when nothing is worth posting right now."""
         fmt = force_format or self.choose_format(headlines)
         if fmt == "weekly_article":
             return self._weekly(snap)
+        # Follow-ups on our own earlier calls get more views than fresh posts on quiet coins.
+        if fmt == "follow_up" or (not force_format and self.store.last_format() != "follow_up"):
+            fu = self.followup_candidate(snap)
+            if fu:
+                return self._follow_up(snap, *fu)
+            if fmt == "follow_up":
+                fmt = "coin_focus"
         if fmt == "market_pulse":
-            market = snap.brief(self.s.content.min_quote_volume_usdt)
-            return Brief("market_pulse", [], {"market": market},
-                         movers=market if self.s.content.charts else None)
+            if force_format or self._strongest_move(snap) >= self.s.content.min_move_pct:
+                market = snap.brief(self.s.content.min_quote_volume_usdt)
+                return Brief("market_pulse", [], {"market": market},
+                             movers=market if self.s.content.charts else None)
+            fmt = "coin_focus"
         if fmt == "news_take":
             brief = self._news(snap, headlines)
             if brief:
@@ -81,7 +91,40 @@ class Planner:
             fmt = "coin_focus"
         if fmt == "explainer":
             return self._explainer(snap)
-        return self._coin_focus(snap, force_coin)
+        if force_coin:
+            return self._coin_focus(snap, force_coin)
+        coin = self.pick_coin(snap)
+        if coin:
+            return self._coin_focus(snap, coin)
+        # Quiet market: a fresh headline is still worth a post; filler on a flat coin is not.
+        return self._news(snap, headlines) if headlines else None
+
+    def _strongest_move(self, snap: MarketSnapshot) -> float:
+        liquid = snap.liquid(self.s.content.min_quote_volume_usdt)
+        return max((abs(t.change_pct) for t in liquid), default=0.0)
+
+    def followup_candidate(self, snap: MarketSnapshot) -> tuple[str, HistoryEntry, float] | None:
+        """The coin of an earlier post that has moved most since that post, if it moved enough."""
+        c = self.s.content
+        if c.follow_up_move_pct <= 0:
+            return None
+        now = utcnow()
+        latest: dict[str, HistoryEntry] = {}
+        for h in self.store.published_since(now - timedelta(hours=48)):
+            if h.coins:
+                latest[h.coins[0]] = h
+        best = None
+        for coin, h in latest.items():
+            ref, t = h.ref or {}, snap.tickers.get(coin)
+            if (h.format == "follow_up" or not t or ref.get("coin") != coin or not ref.get("price")
+                    or t.quote_volume < c.min_quote_volume_usdt):
+                continue
+            if (now - h.published_dt).total_seconds() / 3600 < c.follow_up_min_hours:
+                continue
+            move = (t.price / ref["price"] - 1) * 100
+            if abs(move) >= c.follow_up_move_pct and (best is None or abs(move) > abs(best[2])):
+                best = (coin, h, move)
+        return best
 
     def choose_format(self, headlines: list[Headline]) -> str:
         wa = self.s.content.weekly_article
@@ -102,17 +145,35 @@ class Planner:
             return "coin_focus"
         return self.rng.choices([k for k, _ in options], weights=[w for _, w in options])[0]
 
-    def pick_coin(self, snap: MarketSnapshot) -> str:
-        cooldown = self.store.recent_coins(self.s.content.coin_cooldown_hours)
-        min_vol = self.s.content.min_quote_volume_usdt
-        candidates = {b for b in self.s.content.watchlist if b in snap.tickers}
-        candidates |= {t.base for t in snap.gainers(min_vol, 5) + snap.losers(min_vol, 5)}
-        candidates = {c for c in candidates if c not in cooldown and snap.tickers[c].quote_volume >= min_vol}
+    def pick_coin(self, snap: MarketSnapshot) -> str | None:
+        """The fresh coin with the biggest 24h move, or None if none moved at least min_move_pct."""
+        c = self.s.content
+        cooldown = self.store.recent_coins(c.coin_cooldown_hours)
+        min_vol = c.min_quote_volume_usdt
+        candidates = {b for b in c.watchlist if b in snap.tickers}
+        candidates |= {t.base for t in snap.gainers(min_vol, 8) + snap.losers(min_vol, 8)}
+        candidates = {b for b in candidates if b not in cooldown and snap.tickers[b].quote_volume >= min_vol
+                      and abs(snap.tickers[b].change_pct) >= c.min_move_pct}
         if not candidates:
+            if c.min_move_pct > 0:
+                return None
             candidates = {b for b in ("BTC", "ETH") if b in snap.tickers}
-        # Most interesting first: biggest absolute move today.
-        ranked = sorted(candidates, key=lambda b: abs(snap.tickers[b].change_pct), reverse=True)
-        return self.rng.choice(ranked[:3])
+        # Big moves are what readers open and trade; take the biggest.
+        return max(candidates, key=lambda b: abs(snap.tickers[b].change_pct))
+
+    def _follow_up(self, snap: MarketSnapshot, coin: str, prev: HistoryEntry, move: float) -> Brief:
+        brief = self._coin_focus(snap, coin)
+        ref = prev.ref or {}
+        brief.format = "follow_up"
+        brief.data["my_previous_post"] = {
+            "hours_ago": round((utcnow() - prev.published_dt).total_seconds() / 3600, 1),
+            "price_then": ref.get("price"),
+            "change_24h_pct_then": ref.get("change_24h_pct"),
+            "volume_24h_usdt_then": ref.get("volume_24h_usdt"),
+            "price_move_since_post_pct": round(move, 2),
+            "what_i_wrote": prev.text,
+        }
+        return brief
 
     def _coin_focus(self, snap: MarketSnapshot, coin: str | None) -> Brief:
         coin = coin or self.pick_coin(snap)

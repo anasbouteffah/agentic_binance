@@ -217,3 +217,33 @@ def test_trending_hashtags_skip_expired_and_comments(tmp_path):
     f.write_text("# comment\n#Live 2026-10-04 macro posts\n#Old 2026-09-01 stale\nbad line\n", encoding="utf-8")
     assert trending_hashtags(f, today="2026-10-02") == ["#Live: macro posts"]
     assert trending_hashtags(tmp_path / "missing.txt") == []
+
+
+def test_quiet_market_skips_and_biggest_mover_wins(settings, market):
+    store = Store(settings.data_path)
+    snap = market.snapshot()
+    settings.content.min_move_pct = 8.0
+    planner = Planner(settings, store, market, random.Random(1))
+    assert planner.pick_coin(snap) == "PEPE"  # +12%, SOL +6.5% is below the bar
+    store.append(_entry(30, coins=("PEPE",)))
+    assert planner.pick_coin(snap) is None
+    settings.content.formats = {"coin_focus": 1}
+    assert planner.plan(snap, []) is None
+
+
+def test_follow_up_when_coin_moved_since_post(settings, market):
+    store = Store(settings.data_path)
+    snap = market.snapshot()
+    settings.content.follow_up_move_pct = 5.0
+    price = snap.tickers["SOL"].price
+    old = _entry(300, coins=("SOL",))
+    old.ref = {"coin": "SOL", "price": price / 1.10, "change_24h_pct": 1.0, "volume_24h_usdt": 1e8}
+    store.append(old)
+    planner = Planner(settings, store, market, random.Random(1))
+    brief = planner.plan(snap, [])
+    assert brief.format == "follow_up" and brief.coins == ["SOL"]
+    assert round(brief.data["my_previous_post"]["price_move_since_post_pct"]) == 10
+    # Too recent, or moved too little: no follow-up.
+    old.published_at = (utcnow() - timedelta(hours=1)).isoformat()
+    store.history_file.unlink(); store.append(old)
+    assert planner.followup_candidate(snap) is None

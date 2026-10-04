@@ -34,6 +34,11 @@ class ContentSettings(BaseModel):
     watchlist: list[str] = Field(default_factory=lambda: ["BTC", "ETH", "BNB", "SOL"])
     min_quote_volume_usdt: float = 20_000_000
     coin_cooldown_hours: int = 12
+    # Skip a run when no fresh coin moved at least this much in 24h (0 = never skip).
+    min_move_pct: float = 0.0
+    # Follow up on an earlier post when its coin moved at least this much since that post.
+    follow_up_move_pct: float = 0.0
+    follow_up_min_hours: float = 4.0
     charts: bool = True
     watermark: str = "Binance Square"
 

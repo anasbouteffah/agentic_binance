@@ -44,6 +44,12 @@ FORMAT_GUIDE = {
         "its 7d average, RSI and funding when present. Give a clear view, the exact level that would "
         "change your mind, and what you are waiting for before acting."
     ),
+    "follow_up": (
+        "A follow-up on your own earlier post about this coin (my_previous_post in DATA). Open with what "
+        "changed since then: the price then versus now and the move since the post. Say plainly whether "
+        "the view and the levels you gave held up or were wrong; never claim you traded it. Then give the "
+        "updated view, the level that now matters, and what you watch next."
+    ),
     "news_take": (
         "Your opinion on the headline in DATA. Summarise the news in one sentence in your own words (name "
         "the source outlet), then give your take and connect it to the coin's actual market data. "
