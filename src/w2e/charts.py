@@ -83,7 +83,9 @@ def _save(fig, out_dir: Path, name: str) -> Path:
     return path
 
 
-def render_price_chart(detail: CoinDetail, out_dir: Path, watermark: str = "") -> Path:
+def render_price_chart(detail: CoinDetail, out_dir: Path, watermark: str = "",
+                       ref: dict | None = None) -> Path:
+    """7-day 1h chart. `ref` (price_then, hours_ago) marks the price at an earlier post."""
     times = [datetime.fromtimestamp(t / 1000, tz=timezone.utc) for t in detail.times_1h]
     closes = detail.closes_1h
     color = UP if closes[-1] >= closes[0] else DOWN
@@ -98,6 +100,15 @@ def render_price_chart(detail: CoinDetail, out_dir: Path, watermark: str = "") -
             va="bottom", fontsize=LABEL_SIZE)
     ax.text(times[0], detail.low_7d, f" 7d low {fmt_price(detail.low_7d)}", color=TEXT,
             va="top", fontsize=LABEL_SIZE)
+    lo, hi = detail.low_7d, detail.high_7d
+    if ref and ref.get("price_then"):
+        then = float(ref["price_then"])
+        lo, hi = min(lo, then), max(hi, then)
+        ax.axhline(then, color=ACCENT, linestyle=":", linewidth=2.2)
+        ago = ref.get("hours_ago")
+        label = f"my post{f' {ago:.0f}h ago' if ago is not None else ''}: {fmt_price(then)} "
+        ax.text(times[-1], then, label, color=ACCENT, va="bottom", ha="right", fontsize=LABEL_SIZE,
+                fontweight="bold", bbox={"facecolor": BG, "edgecolor": "none", "alpha": 0.85, "pad": 2})
     ax.plot([times[-1]], [closes[-1]], "o", color=color, markersize=9)
 
     ax.grid(color=GRID, linewidth=0.8)
@@ -106,16 +117,22 @@ def render_price_chart(detail: CoinDetail, out_dir: Path, watermark: str = "") -
     ax.yaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: fmt_price(v)))
     ax.yaxis.tick_right()
-    pad = (detail.high_7d - detail.low_7d) * 0.08
-    ax.set_ylim(detail.low_7d - pad, detail.high_7d + pad)
+    pad = (hi - lo) * 0.08
+    ax.set_ylim(lo - pad, hi + pad)
 
+    # Header: the feed shows a small thumbnail, so the day's move is the biggest thing on it.
     _text_row(fig, 0.03, 0.89, [(f"${detail.base}  ", TEXT), (fmt_price(detail.price), TEXT)], 38)
-    _text_row(fig, 0.03, 0.82, [("24h ", MUTED), (f"{detail.change_24h_pct:+.2f}%", _pct_color(detail.change_24h_pct)),
-                                ("    7d ", MUTED), (f"{detail.change_7d_pct:+.2f}%", _pct_color(detail.change_7d_pct))],
-              24)
+    fig.text(0.97, 0.87, f"{detail.change_24h_pct:+.1f}%", color=_pct_color(detail.change_24h_pct),
+             fontsize=64, fontweight="bold", ha="right")
+    fig.text(0.97, 0.82, "24h", color=MUTED, fontsize=20, ha="right")
+    parts = [("7d ", MUTED), (f"{detail.change_7d_pct:+.1f}%", _pct_color(detail.change_7d_pct))]
+    if detail.volume_ratio_vs_7d_avg:
+        vr = detail.volume_ratio_vs_7d_avg
+        parts += [("    volume ", MUTED), (f"{vr:.1f}x avg", ACCENT if vr >= 2 else TEXT)]
+    _text_row(fig, 0.03, 0.82, parts, 24)
     _footer(fig, "Binance spot, 1h, last 7 days", watermark)
 
-    fig.subplots_adjust(left=0.03, right=0.84, top=0.78, bottom=0.12)
+    fig.subplots_adjust(left=0.03, right=0.84, top=0.76, bottom=0.12)
     return _save(fig, out_dir, detail.base)
 
 
@@ -143,6 +160,9 @@ def render_movers_chart(market: dict, out_dir: Path, watermark: str = "") -> Pat
 
     fig, ax = _new_figure()
     bars = ax.barh(labels, values, color=colors, height=0.7)
+    top = max(rows, key=lambda r: abs(r["change_24h_pct"]))
+    bars[rows.index(top)].set_edgecolor(ACCENT)
+    bars[rows.index(top)].set_linewidth(3)
     ax.axvline(0, color=MUTED, linewidth=1.2)
     span = max(abs(v) for v in values) or 1
     ax.set_xlim(-span * 1.35, span * 1.35)
@@ -154,7 +174,10 @@ def render_movers_chart(market: dict, out_dir: Path, watermark: str = "") -> Pat
     ax.set_xticks([])
     ax.grid(False)
 
-    fig.text(0.03, 0.9, "24h movers", color=TEXT, fontsize=36, fontweight="bold")
+    # Lead with the day's biggest move so each thumbnail looks different in the feed.
+    fig.text(0.03, 0.945, "Biggest 24h move (liquid USDT pairs)", color=MUTED, fontsize=16)
+    _text_row(fig, 0.03, 0.86, [(f"${top['coin']} ", TEXT),
+                                 (f"{top['change_24h_pct']:+.1f}%", _pct_color(top["change_24h_pct"]))], 38)
     fg = market.get("fear_greed")
     if fg:
         fig.text(0.97, 0.91, f"Fear & Greed {fg['value']} ({fg['label']})", color=ACCENT,
@@ -168,7 +191,8 @@ def render_movers_chart(market: dict, out_dir: Path, watermark: str = "") -> Pat
 def render_brief_image(brief, out_dir: Path, watermark: str = "") -> Path | None:
     """The image for a planner Brief: coin price chart, else movers chart, else none."""
     if brief.chart is not None:
-        return render_price_chart(brief.chart, out_dir, watermark)
+        prev = (getattr(brief, "data", None) or {}).get("my_previous_post")
+        return render_price_chart(brief.chart, out_dir, watermark, prev)
     if getattr(brief, "movers", None):
         return render_movers_chart(brief.movers, out_dir, watermark)
     return None
