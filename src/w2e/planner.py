@@ -11,6 +11,7 @@ from .config import Settings
 from .market import CoinDetail, MarketClient, MarketSnapshot
 from .news import Headline
 from .store import HistoryEntry, Store, utcnow
+from .trending import trending_coins
 
 EXPLAINER_TOPICS = [
     "what funding rates tell you about crowd positioning",
@@ -152,14 +153,18 @@ class Planner:
         min_vol = c.min_quote_volume_usdt
         candidates = {b for b in c.watchlist if b in snap.tickers}
         candidates |= {t.base for t in snap.gainers(min_vol, 8) + snap.losers(min_vol, 8)}
-        candidates = {b for b in candidates if b not in cooldown and snap.tickers[b].quote_volume >= min_vol
-                      and abs(snap.tickers[b].change_pct) >= c.min_move_pct}
+        # A coin with its own trending topic is worth a post even on a small move: the tag puts
+        # the post in a feed many more people read.
+        trending = {b for b in trending_coins() if b in snap.tickers}
+        candidates = {b for b in candidates | trending if b not in cooldown
+                      and snap.tickers[b].quote_volume >= min_vol
+                      and (b in trending or abs(snap.tickers[b].change_pct) >= c.min_move_pct)}
         if not candidates:
             if c.min_move_pct > 0:
                 return None
             candidates = {b for b in ("BTC", "ETH") if b in snap.tickers}
         # Big moves are what readers open and trade; take the biggest.
-        return max(candidates, key=lambda b: abs(snap.tickers[b].change_pct))
+        return max(candidates, key=lambda b: abs(snap.tickers[b].change_pct) + (10 if b in trending else 0))
 
     def _follow_up(self, snap: MarketSnapshot, coin: str, prev: HistoryEntry, move: float) -> Brief:
         brief = self._coin_focus(snap, coin)

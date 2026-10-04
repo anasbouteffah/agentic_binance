@@ -59,3 +59,7 @@ def test_hashtag_rules():
 
 def test_cashtags_allow_digit_tickers_but_not_money():
     assert cashtags("$0G and $1INCH beat $BTC, not $100") == ["0G", "1INCH", "BTC"]
+
+
+def test_dollar_inside_trending_hashtag_is_not_a_cashtag():
+    assert cashtags("$BTC is at 86,178.\n\n#BitcoinRejectedAt$87K #BNBSurpasses$790") == ["BTC"]

@@ -20,6 +20,7 @@ from .pipeline import NO_STORY, gather_brief, publish_draft, schedule_gate
 from .quality import cashtags, check_draft
 from .square import SquareClient, resolve_api_key
 from .store import Draft, HistoryEntry, Store, utcnow
+from .trending import trending_hashtags
 from .writer import FORMAT_GUIDE, REVIEW_SYSTEM, system_prompt
 
 
@@ -77,24 +78,6 @@ def coin_ref(data: dict, coin: str | None) -> dict | None:
                 return {"coin": coin, "price": r.get("price"), "change_24h_pct": r.get("change_24h_pct"),
                         "volume_24h_usdt": vol * 1e6 if vol is not None else None}
     return None
-
-
-TRENDING_FILE = Path(__file__).resolve().parents[2] / "trending.txt"
-
-
-def trending_hashtags(path: Path = TRENDING_FILE, today: str | None = None) -> list[str]:
-    """Unexpired lines of trending.txt: '#Tag YYYY-MM-DD when to use it'."""
-    today = today or utcnow().date().isoformat()
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
-    out = []
-    for line in lines:
-        m = re.match(r"(#\w\S*)\s+(\d{4}-\d{2}-\d{2})\s+(.+)", line.strip())
-        if m and m.group(2) >= today:
-            out.append(f"{m.group(1)}: {m.group(3)}")
-    return out
 
 
 def render_packet(settings: Settings, store: Store, pending: dict) -> str:

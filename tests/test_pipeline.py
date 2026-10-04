@@ -212,14 +212,15 @@ def test_news_prefers_non_btc_headline(settings, market):
 
 
 def test_trending_hashtags_skip_expired_and_comments(tmp_path):
-    from w2e.session import trending_hashtags
+    from w2e.trending import trending_hashtags
     f = tmp_path / "trending.txt"
     f.write_text("# comment\n#Live 2026-10-04 macro posts\n#Old 2026-09-01 stale\nbad line\n", encoding="utf-8")
     assert trending_hashtags(f, today="2026-10-02") == ["#Live: macro posts"]
     assert trending_hashtags(tmp_path / "missing.txt") == []
 
 
-def test_quiet_market_skips_and_biggest_mover_wins(settings, market):
+def test_quiet_market_skips_and_biggest_mover_wins(settings, market, monkeypatch):
+    monkeypatch.setattr("w2e.planner.trending_coins", lambda: set())
     store = Store(settings.data_path)
     snap = market.snapshot()
     settings.content.min_move_pct = 8.0
@@ -231,7 +232,8 @@ def test_quiet_market_skips_and_biggest_mover_wins(settings, market):
     assert planner.plan(snap, []) is None
 
 
-def test_follow_up_when_coin_moved_since_post(settings, market):
+def test_follow_up_when_coin_moved_since_post(settings, market, monkeypatch):
+    monkeypatch.setattr("w2e.planner.trending_coins", lambda: set())
     store = Store(settings.data_path)
     snap = market.snapshot()
     settings.content.follow_up_move_pct = 5.0
@@ -247,3 +249,16 @@ def test_follow_up_when_coin_moved_since_post(settings, market):
     old.published_at = (utcnow() - timedelta(hours=1)).isoformat()
     store.history_file.unlink(); store.append(old)
     assert planner.followup_candidate(snap) is None
+
+
+def test_trending_coin_is_picked_on_a_small_move(settings, market, monkeypatch, tmp_path):
+    from w2e.trending import trending_coins, trending_hashtags
+    f = tmp_path / "trending.txt"
+    f.write_text("#BNBSurpasses$580 2026-10-05 coin:BNB BNB price above 580\n")
+    assert trending_coins(f, today="2026-10-04") == {"BNB"}
+    assert trending_hashtags(f, today="2026-10-04") == ["#BNBSurpasses$580: BNB price above 580"]
+    monkeypatch.setattr("w2e.planner.trending_coins", lambda: {"BNB"})
+    store = Store(settings.data_path)
+    settings.content.min_move_pct = 8.0
+    store.append(_entry(30, coins=("PEPE",)))
+    assert Planner(settings, store, market, random.Random(1)).pick_coin(market.snapshot()) == "BNB"

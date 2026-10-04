@@ -1,6 +1,7 @@
-# Trending hashtags from the Square "Sujets d'actualite" panel. Edit by hand.
-# Format: <hashtag> <expires YYYY-MM-DD> <what a post must be about to use it>
+# Trending hashtags from the Square "Trending" panel. Edit by hand.
+# Format: <hashtag> <expires YYYY-MM-DD> [coin:TICKER] <what a post must be about to use it>
+# coin:TICKER makes the planner write about that coin even on a small move.
 # The writer may use ONE of these, only when the post really is about that topic.
-# Expired lines are ignored automatically.
-#NFPWatch 2026-10-04 US jobs report (NFP), Treasury yields or macro effect on BTC
-#BitcoinFundingRateTriplesTo10% 2026-10-04 BTC funding rates, only if DATA has a funding number
+# Expired lines are ignored automatically. Copy tags exactly: a cut-off tag joins no feed.
+#BNBSurpasses$790 2026-10-05 coin:BNB BNB price, only if DATA shows BNB at or above 790
+#BitcoinRejectedAt$87K 2026-10-05 coin:BTC BTC failing near 87,000, only if DATA shows BTC below 87,000 with a recent high near it

@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from .config import QualitySettings
 
 # Tickers may start with a digit ($0G, $1INCH) but must contain a letter ($100 is money).
-CASHTAG_RE = re.compile(r"\$((?=[A-Z0-9]*[A-Z])[A-Z0-9]{2,15})\b")
+# A "$" inside a hashtag (#BitcoinRejectedAt$87K) is part of the tag, not a cashtag.
+CASHTAG_RE = re.compile(r"(?<![\w$])\$((?=[A-Z0-9]*[A-Z])[A-Z0-9]{2,15})\b")
 URL_RE = re.compile(r"https?://|www\.", re.I)
 
 # Hype and promise language: risk of "misleading" moderation and of losing eligibility.
