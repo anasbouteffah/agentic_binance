@@ -47,7 +47,9 @@ FORMAT_GUIDE = {
     "follow_up": (
         "A follow-up on your own earlier post about this coin (my_previous_post in DATA). Open with what "
         "changed since then: the price then versus now and the move since the post. Say plainly whether "
-        "the view and the levels you gave held up or were wrong; never claim you traded it. Then give the "
+        "the view and the levels you gave held up or were wrong; never claim you traded it. DATA has the "
+        "price then and now only, not the path in between: never say a level was or was not touched, tested "
+        "or broken in the meantime, only where price is relative to it now. Then give the "
         "updated view, the level that now matters, and what you watch next."
     ),
     "news_take": (
