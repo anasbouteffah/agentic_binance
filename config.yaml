@@ -20,7 +20,7 @@ schedule:
   # 12/day, one every ~2 hours (owner choice, Oct 3): Binance demonetizes high-volume repetitive accounts,
   # and a single violation record blocks the Verified badge.
   max_posts_per_day: 12
-  min_minutes_between_posts: 110
+  min_minutes_between_posts: 95
   # Only publish between these UTC hours (start inclusive, end exclusive).
   active_hours_utc: [0, 24]
   # Chance that a scheduler tick which passes every gate actually posts.
