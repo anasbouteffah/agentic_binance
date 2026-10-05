@@ -77,6 +77,11 @@ class Planner:
         fmt = force_format or self.choose_format(headlines)
         if fmt == "weekly_article":
             return self._weekly(snap)
+        # A blockbuster move (2x the minimum, e.g. +30%) beats any follow-up: it is what readers open.
+        if not force_format and not force_coin and self.s.content.min_move_pct > 0:
+            fresh = self.pick_coin(snap)
+            if fresh and abs(snap.tickers[fresh].change_pct) >= 2 * self.s.content.min_move_pct:
+                return self._coin_focus(snap, fresh)
         # Follow-ups on our own earlier calls get more views than fresh posts on quiet coins.
         if fmt == "follow_up" or (not force_format and self.store.last_format() != "follow_up"):
             fu = self.followup_candidate(snap)

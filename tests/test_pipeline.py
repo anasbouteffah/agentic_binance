@@ -270,3 +270,16 @@ def test_news_skips_daily_roundup_headlines(settings, market):
     h = Headline("Here's what happened in crypto today", "Latest news on Bitcoin price and DeFi.",
                  "https://x", "cointelegraph.com", utcnow())
     assert Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [h]) is None
+
+
+def test_blockbuster_mover_beats_follow_up(settings, market, monkeypatch):
+    monkeypatch.setattr("w2e.planner.trending_coins", lambda: set())
+    store = Store(settings.data_path)
+    snap = market.snapshot()
+    settings.content.min_move_pct = 5.0          # PEPE +12% is >= 2x
+    settings.content.follow_up_move_pct = 5.0
+    old = _entry(300, coins=("SOL",))
+    old.ref = {"coin": "SOL", "price": snap.tickers["SOL"].price / 1.10}
+    store.append(old)
+    brief = Planner(settings, store, market, random.Random(1)).plan(snap, [])
+    assert brief.format == "coin_focus" and brief.coins == ["PEPE"]

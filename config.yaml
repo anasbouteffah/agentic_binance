@@ -51,7 +51,8 @@ content:
   coin_cooldown_hours: 12
   # Skip the run (post nothing) when no fresh coin moved at least this % in 24h.
   # Fewer, stronger posts beat filler: filler drags views and looks like spam.
-  min_move_pct: 8
+  # Oct 5 stats: moves of 15%+ got 128-269 views, 12% moves 35-76, BTC 36.
+  min_move_pct: 15
   # Follow up on an earlier post (even inside the cooldown) once its coin has
   # moved this % since that post and at least this many hours have passed.
   follow_up_move_pct: 5

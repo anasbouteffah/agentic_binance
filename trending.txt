@@ -3,5 +3,5 @@
 # coin:TICKER makes the planner write about that coin even on a small move.
 # The writer may use ONE of these, only when the post really is about that topic.
 # Expired lines are ignored automatically. Copy tags exactly: a cut-off tag joins no feed.
-#BNBSurpasses$790 2026-10-05 coin:BNB BNB price, only if DATA shows BNB at or above 790
-#BitcoinRejectedAt$87K 2026-10-05 coin:BTC BTC failing near 87,000, only if DATA shows BTC below 87,000 with a recent high near it
+#BNBSurpasses$790 2026-10-05 BNB price, only if DATA shows BNB at or above 790
+#BitcoinRejectedAt$87K 2026-10-05 BTC failing near 87,000, only if DATA shows BTC below 87,000 with a recent high near it
