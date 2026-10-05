@@ -46,6 +46,11 @@ class Brief:
     notes: list[str] = field(default_factory=list)
 
 
+# Daily digests and newsletters: they name no event, so there is nothing to take a view on.
+ROUNDUP_RE = re.compile(r"what happened in crypto|daily (recap|digest|roundup)|newsletter|week in review|"
+                        r"morning (brief|report)|price predictions?\b", re.I)
+
+
 def coins_in_headline(h: Headline, tradable: set[str]) -> list[str]:
     text = f"{h.title} {h.summary}"
     found: list[str] = []
@@ -197,7 +202,8 @@ class Planner:
         headlines = sorted(headlines, key=lambda h: coins_in_headline(h, tradable)[:1] == ["BTC"])
         for h in headlines:
             coins = coins_in_headline(h, tradable)
-            if not coins or h.title.lower()[:60] in used or coins[0] in cooldown:
+            if (not coins or h.title.lower()[:60] in used or coins[0] in cooldown
+                    or ROUNDUP_RE.search(h.title)):
                 continue
             detail = self.market.coin_detail(snap, coins[0])
             data = {"headline": h.brief(), "coin": detail.brief(),

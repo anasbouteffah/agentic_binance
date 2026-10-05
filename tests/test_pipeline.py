@@ -262,3 +262,11 @@ def test_trending_coin_is_picked_on_a_small_move(settings, market, monkeypatch, 
     settings.content.min_move_pct = 8.0
     store.append(_entry(30, coins=("PEPE",)))
     assert Planner(settings, store, market, random.Random(1)).pick_coin(market.snapshot()) == "BNB"
+
+
+def test_news_skips_daily_roundup_headlines(settings, market):
+    from w2e.news import Headline
+    store = Store(settings.data_path)
+    h = Headline("Here's what happened in crypto today", "Latest news on Bitcoin price and DeFi.",
+                 "https://x", "cointelegraph.com", utcnow())
+    assert Planner(settings, store, market, random.Random(1))._news(market.snapshot(), [h]) is None
