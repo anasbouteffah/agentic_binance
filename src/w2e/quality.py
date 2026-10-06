@@ -31,6 +31,10 @@ AI_TELLS = [
     "in conclusion", "it's important to note", "it is important to note", "stay tuned",
     "delve", "tapestry", "unlock the potential", "a testament to", "in the world of crypto",
     "as an ai", "remember, always do your own research",
+    # Disclaimers and template labels (Oct 6): they make every post look machine-made.
+    "not financial advice", "nfa", "dyor", "my take:", "my view:", "what would change my view:",
+    "what changes my mind:", "what i am waiting for:", "whole story", "here's the thing",
+    "the real question", "underscores", "serves as",
 ]
 
 
@@ -98,7 +102,7 @@ def check_draft(text: str, title: str | None, settings: QualitySettings, tradabl
         if phrase in lower:
             problems.append(f"banned phrase: '{phrase}'")
     for phrase in AI_TELLS:
-        if phrase in lower:
+        if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", lower):
             problems.append(f"generic AI phrase: '{phrase}'")
 
     if URL_RE.search(text):

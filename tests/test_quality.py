@@ -63,3 +63,11 @@ def test_cashtags_allow_digit_tickers_but_not_money():
 
 def test_dollar_inside_trending_hashtag_is_not_a_cashtag():
     assert cashtags("$BTC is at 86,178.\n\n#BitcoinRejectedAt$87K #BNBSurpasses$790") == ["BTC"]
+
+
+def test_rejects_disclaimers_and_template_labels():
+    bad = GOOD.replace("I would still", "My take: I would still").replace(" #Solana", "\n\nNot financial advice.\n\n#Solana")
+    joined = " ".join(check_draft(bad, None, QualitySettings(max_similarity=1), TRADABLE, []).problems)
+    assert "not financial advice" in joined and "my take:" in joined
+    fair = GOOD.replace("which is the part I care about", "which looks unfair to late buyers")
+    assert check_draft(fair, None, QualitySettings(), TRADABLE, []).ok

@@ -42,7 +42,7 @@ FORMAT_GUIDE = {
     "coin_focus": (
         "A short analysis of one coin. Use its 24h and 7d change, distance from the 7d high, volume versus "
         "its 7d average, RSI and funding when present. Give a clear view, the exact level that would "
-        "change your mind, and what you are waiting for before acting."
+        "change your mind, and what you are waiting for, written as normal sentences, never as labelled lines."
     ),
     "follow_up": (
         "A follow-up on your own earlier post about this coin (my_previous_post in DATA). Open with what "
@@ -93,8 +93,13 @@ HARD RULES
    The feed preview shows only about two lines: the first sentence must carry the main $CASHTAG and the
    single most striking number (e.g. "$QNT is up 271% in seven days."), in a different wording each time.
    Never use: "let's dive in", "delve", "in the ever-evolving", "buckle up", "game-changer",
-   "it's important to note", "in conclusion", "stay tuned", "not financial advice".
-   Do not use em dashes. Do not use markdown (no **, no #, no bullet symbols); use line breaks.
+   "it's important to note", "in conclusion", "stay tuned", "not financial advice", "NFA", "DYOR".
+   No disclaimer line at all. Do not use em dashes.
+   Write like a human trader, not a template (humanizer rules): no labelled sections such as "My take:",
+   "My view:", "What would change my view:" or "What I am waiting for:"; work the view and the levels into
+   normal sentences. No "X is the whole story" or other punchline formulas, no lists of three, no runs of
+   short dramatic fragments, no "here's the thing" or "the real question" openers, no "serves as",
+   "highlights", "underscores", "crucial", "key" (adjective) or "landscape". Uneven sentence length is good. Do not use markdown (no **, no #, no bullet symbols); use line breaks.
 7. Length: short posts {q.short_post_chars[0]}-{q.short_post_chars[1]} characters; articles
    {q.article_chars[0]}-{q.article_chars[1]} characters.
 8. Do not reuse the openings or structure of the author's recent posts listed in the request."""

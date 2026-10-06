@@ -15,11 +15,11 @@ One run publishes at most one post.
    w2e brief --no-random-skip
    ```
    If it prints `status: skipped ...`, stop here. Do not commit anything.
-   A skip is normal: the bot only posts when a coin moved enough or a
-   follow-up is due.
+   A skip is normal: the 150-minute gap or the 8/day cap is not met yet.
 3. Write the post exactly as the packet says: persona, hard rules, only numbers
    from DATA, 1-3 valid $CASHTAGS, plain text. Then review it yourself with the
-   editor checklist in the packet. Rewrite until you would score it 7+ with zero
+   editor checklist in the packet. No disclaimer line ("Not financial advice"),
+   no labelled lines like "My take:"; it must read like a person wrote it. Rewrite until you would score it 7+ with zero
    factual errors. Save the body to `data/pending/post.txt`.
 4. Publish
    ```bash
