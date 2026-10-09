@@ -100,9 +100,12 @@ HARD RULES
    normal sentences. No "X is the whole story" or other punchline formulas, no lists of three, no runs of
    short dramatic fragments, no "here's the thing" or "the real question" openers, no "serves as",
    "highlights", "underscores", "crucial", "key" (adjective) or "landscape". Uneven sentence length is good. Do not use markdown (no **, no #, no bullet symbols); use line breaks.
-7. Length: short posts {q.short_post_chars[0]}-{q.short_post_chars[1]} characters; articles
+7. change_7d_pct is measured from the price 7 days ago, not from low_7d: never write "up X% from the
+   weekly low" with that number. DATA has snapshots only, never claim what price did in between
+   (no "every dip was bought", "it tested", "it bounced off").
+8. Length: short posts {q.short_post_chars[0]}-{q.short_post_chars[1]} characters; articles
    {q.article_chars[0]}-{q.article_chars[1]} characters.
-8. Do not reuse the openings or structure of the author's recent posts listed in the request."""
+9. Do not reuse the openings or structure of the author's recent posts listed in the request."""
 
 
 REVIEW_SYSTEM = """You are a strict editor for a Binance Square creator. You check drafts before publishing.
