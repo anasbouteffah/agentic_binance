@@ -79,7 +79,14 @@ def publish_draft(settings: Settings, store: Store, draft: Draft, square: Square
         store.append(entry)
         return entry
     try:
-        result = square.publish(draft.text, title=draft.title, image_path=draft.image_path)
+        try:
+            result = square.publish(draft.text, title=draft.title, image_path=draft.image_path)
+        except RuntimeError as e:
+            # The chart is optional: if Square's image pipeline fails, post the text alone.
+            if not (draft.image_path and str(e).startswith("Image ")):
+                raise
+            log.warning("image failed (%s), publishing without it", e)
+            result = square.publish(draft.text, title=draft.title, image_path=None)
         entry.status, entry.post_id, entry.link = "published", result.post_id, result.link
     except (SquareError, RuntimeError, OSError) as e:
         entry.status, entry.error = "failed", str(e)

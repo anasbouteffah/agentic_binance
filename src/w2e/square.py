@@ -80,7 +80,7 @@ def mask_key(key: str) -> str:
 
 class SquareClient:
     def __init__(self, api_key: str, http: httpx.Client | None = None,
-                 poll_interval: float = 3.0, max_polls: int = 10):
+                 poll_interval: float = 3.0, max_polls: int = 20):
         self.api_key = api_key
         self.http = http or httpx.Client(timeout=60)
         self.poll_interval = poll_interval
