@@ -10,10 +10,16 @@ mode: auto
 language: en
 
 llm:
-  # Oct 12: PC mode pays per token. Sonnet 5.5 is about 2.5x cheaper than Opus 5;
-  # claude-haiku-5-5 is about 50x cheaper than Opus 5 if quality holds.
-  model: claude-sonnet-5-5
-  # low | medium | high. medium is a good cost/quality balance for short posts.
+  # Free setup (Oct 12, owner: no paid API keys): Google's free Gemini tier through
+  # its OpenAI-compatible endpoint. Free key from https://aistudio.google.com/apikey
+  # saved in the GEMINI_API_KEY environment variable. Check the model name in AI Studio.
+  # Paid Claude instead: provider: anthropic, model: claude-sonnet-5-5 (needs ANTHROPIC_API_KEY).
+  # Local and keyless: base_url: http://localhost:11434/v1, model: <an Ollama model>, api_key_env: ""
+  provider: openai_compatible
+  base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  model: gemini-flash-latest
+  api_key_env: GEMINI_API_KEY
+  # low | medium | high (Claude only)
   effort: medium
 
 schedule:

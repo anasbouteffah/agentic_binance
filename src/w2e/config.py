@@ -10,8 +10,14 @@ from pydantic import BaseModel, Field
 
 
 class LLMSettings(BaseModel):
+    # anthropic: paid Claude API. openai_compatible: any /chat/completions endpoint,
+    # e.g. the free Gemini tier, OpenRouter free models, or a local Ollama.
+    provider: Literal["anthropic", "openai_compatible"] = "anthropic"
     model: str = "claude-opus-5"
     effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    base_url: str = ""
+    # Name of the environment variable holding the key. Empty for keyless servers (Ollama).
+    api_key_env: str = ""
 
 
 class ScheduleSettings(BaseModel):

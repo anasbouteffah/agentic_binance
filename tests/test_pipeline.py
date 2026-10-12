@@ -283,3 +283,24 @@ def test_blockbuster_mover_beats_follow_up(settings, market, monkeypatch):
     store.append(old)
     brief = Planner(settings, store, market, random.Random(1)).plan(snap, [])
     assert brief.format == "coin_focus" and brief.coins == ["PEPE"]
+
+
+def test_openai_compatible_provider_parses_json(monkeypatch):
+    import httpx
+    from w2e.config import Settings
+
+    settings = Settings.model_validate({"llm": {"provider": "openai_compatible", "model": "free-model",
+                                                "base_url": "https://llm.example/v1", "api_key_env": "FREE_KEY"}})
+    monkeypatch.setenv("FREE_KEY", "k")
+    seen = {}
+
+    def handler(request):
+        seen["auth"] = request.headers["authorization"]
+        seen["url"] = str(request.url)
+        content = '```json\n{"score": 8, "factual_errors": [], "issues": []}\n```'
+        return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
+
+    writer = Writer(settings, http=httpx.Client(transport=httpx.MockTransport(handler)))
+    review = writer._parse("sys", "user", Review, 100)
+    assert review.score == 8
+    assert seen == {"auth": "Bearer k", "url": "https://llm.example/v1/chat/completions"}

@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 import anthropic
+import httpx
 from pydantic import BaseModel, Field
 
 from .config import Settings
@@ -122,11 +124,50 @@ useful and distinctive. Any factual error caps the score at 4. Be specific in is
 
 
 class Writer:
-    def __init__(self, settings: Settings, client: anthropic.Anthropic | None = None):
+    def __init__(self, settings: Settings, client: anthropic.Anthropic | None = None,
+                 http: httpx.Client | None = None):
         self.s = settings
-        self.client = client or anthropic.Anthropic()
+        if settings.llm.provider == "openai_compatible":
+            self.client = None
+            self.http = http or httpx.Client(timeout=180)
+        else:
+            self.client = client or anthropic.Anthropic()
 
     def _parse(self, system: str, user: str, schema: type[BaseModel], max_tokens: int):
+        if self.s.llm.provider == "openai_compatible":
+            return self._parse_openai(system, user, schema, max_tokens)
+        return self._parse_claude(system, user, schema, max_tokens)
+
+    def _parse_openai(self, system: str, user: str, schema: type[BaseModel], max_tokens: int):
+        llm = self.s.llm
+        headers = {"Content-Type": "application/json"}
+        if llm.api_key_env:
+            key = os.environ.get(llm.api_key_env, "").strip()
+            if not key:
+                raise RuntimeError(f"Set {llm.api_key_env} in the environment (free key, see PC_SETUP.md).")
+            headers["Authorization"] = f"Bearer {key}"
+        system = (system + "\n\nReply with one JSON object only, no other text, matching this JSON schema:\n"
+                  + json.dumps(schema.model_json_schema()))
+        body = {
+            "model": llm.model,
+            "max_tokens": max_tokens,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "response_format": {"type": "json_object"},
+        }
+        last_error = None
+        for _ in range(2):
+            r = self.http.post(llm.base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
+            if r.status_code >= 400:
+                raise RuntimeError(f"LLM API error {r.status_code}: {r.text[:300]}")
+            content = r.json()["choices"][0]["message"].get("content") or ""
+            content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            try:
+                return schema.model_validate_json(content)
+            except ValueError as e:
+                last_error = e
+        raise RuntimeError(f"No valid JSON from the model: {last_error}")
+
+    def _parse_claude(self, system: str, user: str, schema: type[BaseModel], max_tokens: int):
         kwargs = {}
         # Haiku has no server-side refusal fallback; only send it where it is supported.
         if "haiku" not in self.s.llm.model:
