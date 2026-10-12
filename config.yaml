@@ -10,7 +10,9 @@ mode: auto
 language: en
 
 llm:
-  model: claude-opus-5
+  # Oct 12: PC mode pays per token. Sonnet 5.5 is about 2.5x cheaper than Opus 5;
+  # claude-haiku-5-5 is about 50x cheaper than Opus 5 if quality holds.
+  model: claude-sonnet-5-5
   # low | medium | high. medium is a good cost/quality balance for short posts.
   effort: medium
 

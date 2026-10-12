@@ -127,6 +127,10 @@ class Writer:
         self.client = client or anthropic.Anthropic()
 
     def _parse(self, system: str, user: str, schema: type[BaseModel], max_tokens: int):
+        kwargs = {}
+        # Haiku has no server-side refusal fallback; only send it where it is supported.
+        if "haiku" not in self.s.llm.model:
+            kwargs = {"betas": [FALLBACK_BETA], "fallbacks": "default"}
         response = self.client.beta.messages.parse(
             model=self.s.llm.model,
             max_tokens=max_tokens,
@@ -135,8 +139,7 @@ class Writer:
             thinking={"type": "adaptive"},
             output_config={"effort": self.s.llm.effort},
             output_format=schema,
-            betas=[FALLBACK_BETA],
-            fallbacks="default",
+            **kwargs,
         )
         if response.stop_reason == "refusal":
             raise RuntimeError(f"Model declined the request: {response.stop_details}")
