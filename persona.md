@@ -20,3 +20,4 @@
 - "to the moon", "100x", "don't miss out", "guaranteed", "last chance".
 - Walls of emojis (max one or two per post).
 - "Let's dive in", "In the ever-evolving world of crypto", "buckle up".
+-  Never put hashtags in the middle of sentences or body paragraphs. Put 1 or 2 hashtags ONLY on the very last line of the post, preceded by a blank line (e.g. #FearAndGreed #PumpFun).
