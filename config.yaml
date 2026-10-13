@@ -21,19 +21,24 @@ llm:
   api_key_env: GEMINI_API_KEY
   effort: medium
 
-schedule:
+#schedule:
   # Binance's OpenAPI allows 100 posts/day, but volume is what gets accounts
   # flagged. A few strong posts per day beat many weak ones.
   # 8/day, one every ~3 hours (owner choice, Oct 6: back to the Oct 1-2 setup
   # that earned the first payout; 12/day lowered views per post). Binance demonetizes high-volume repetitive accounts,
   # and a single violation record blocks the Verified badge.
-  max_posts_per_day: 8
-  min_minutes_between_posts: 150
+  #max_posts_per_day: 8
+  #min_minutes_between_posts: 150
   # Only publish between these UTC hours (start inclusive, end exclusive).
-  active_hours_utc: [0, 24]
+  #active_hours_utc: [0, 24]
   # Chance that a scheduler tick which passes every gate actually posts.
   # Below 1.0 spreads posting times so they do not look machine-regular.
-  post_probability: 0.6
+  #post_probability: 0.6
+schedule:
+  max_posts_per_day: 10
+  min_minutes_between_posts: 90
+  active_hours_utc: [0, 24]
+  post_probability: 0.7  
 
 content:
   # Relative weights. The planner never picks the same format twice in a row.
