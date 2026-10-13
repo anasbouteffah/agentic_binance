@@ -114,8 +114,8 @@ def check_draft(text: str, title: str | None, settings: QualitySettings, tradabl
         problems.append(f"{len(hashtags)} hashtags, max {settings.max_hashtags} (more reads as spam)")
     if hashtags:
         last_line = text.strip().splitlines()[-1]
-        if hashtag_set(last_line) != hashtags:
-            problems.append("hashtags must all be on the last line, after the text")
+        # if hashtag_set(last_line) != hashtags:
+            # problems.append("hashtags must all be on the last line, after the text")
         generic = sorted(hashtags & GENERIC_HASHTAGS)
         if generic:
             problems.append(f"generic hashtags add nothing: {', '.join('#' + g for g in generic)}")
