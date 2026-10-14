@@ -22,9 +22,14 @@ jobs:
 
       - name: Install package
         run: pip install .
-
+        
       - name: Run Write to Earn pipeline
-        run: w2e run || (sleep 20 && w2e run)
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            w2e run --force || (sleep 20 && w2e run --force)
+          else
+            w2e run || (sleep 20 && w2e run)
+          fi
         env:
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
