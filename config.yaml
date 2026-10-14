@@ -38,7 +38,7 @@ schedule:
   max_posts_per_day: 10
   min_minutes_between_posts: 90
   active_hours_utc: [0, 24]
-  post_probability: 0.7  
+  post_probability: 0.1  
 
 content:
   # Relative weights. The planner never picks the same format twice in a row.
@@ -80,7 +80,7 @@ content:
 quality:
   # The reviewer model scores each draft 1-10. Below this it is rewritten once,
   # then dropped.
-  min_score: 7
+  min_score: 6
   # 0-1 similarity to any of the last 60 posts. Above this the draft is dropped.
   max_similarity: 0.55
   max_cashtags: 3
