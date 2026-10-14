@@ -38,7 +38,7 @@ schedule:
   max_posts_per_day: 10
   min_minutes_between_posts: 90
   active_hours_utc: [0, 24]
-  post_probability: 0.1  
+  post_probability: 1.0  
 
 content:
   # Relative weights. The planner never picks the same format twice in a row.
